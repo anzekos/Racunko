@@ -34,7 +34,15 @@ export default function LoginPage() {
 
       if (response.ok) {
         // Uporabi login funkcijo iz AuthContext
+        console.log("Login successful, data:", data)
+
         login(data.token, data.user)
+        // DODAJ: Ročno preusmeri za zanesljivost
+        setTimeout(() => {
+          console.log("Manual redirect")
+          router.push("/")
+          router.refresh()
+        }, 100)
       } else {
         setError(data.error || "Napaka pri prijavi")
       }
@@ -103,16 +111,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo credentials za testiranje */}
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <h3 className="text-sm font-medium text-yellow-800 mb-2">
-              Demo podatki za testiranje:
-            </h3>
-            <p className="text-xs text-yellow-700">
-              Uporabniško ime: <strong>admin</strong><br />
-              Geslo: <strong>moje_zelo_varno_geslo_123</strong>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

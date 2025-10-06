@@ -25,15 +25,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [pathname])
 
   const checkAuth = async () => {
     try {
+      if (typeof window === 'undefined') {
+        setLoading(false)
+        return
+      }
+
       const token = localStorage.getItem("token")
       
       if (!token) {
         setLoading(false)
-        // Če ni tokena in ni na login strani, preusmeri na login
         if (pathname !== "/login") {
           router.push("/login")
         }
@@ -52,12 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.valid) {
         setUser(data.user)
-        // Če je na login strani in je že prijavljen, preusmeri na main page
+        // Če smo na login strani in smo prijavljeni, preusmeri na glavno stran
         if (pathname === "/login") {
           router.push("/")
         }
       } else {
         localStorage.removeItem("token")
+        setUser(null)
         if (pathname !== "/login") {
           router.push("/login")
         }
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Auth check error:", error)
       localStorage.removeItem("token")
+      setUser(null)
       if (pathname !== "/login") {
         router.push("/login")
       }
@@ -74,15 +80,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const login = (token: string, userData: User) => {
+    console.log("Login function called", userData)
+
     localStorage.setItem("token", token)
     setUser(userData)
+    // Takoj preusmeri na glavno stran
+    console.log("User set, redirecting...")
+
     router.push("/")
+    router.refresh() // Dodaj refresh za zanesljivost
   }
 
   const logout = () => {
     localStorage.removeItem("token")
     setUser(null)
     router.push("/login")
+    router.refresh()
   }
 
   return (

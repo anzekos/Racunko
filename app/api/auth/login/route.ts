@@ -5,7 +5,6 @@ export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json()
 
-    // Preveri ustreznost z environment variables
     const correctUsername = process.env.ADMIN_USERNAME
     const correctPassword = process.env.ADMIN_PASSWORD
     const jwtSecret = process.env.JWT_SECRET
@@ -17,7 +16,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Preveri uporabniško ime in geslo
     if (username !== correctUsername || password !== correctPassword) {
       return NextResponse.json(
         { error: "Napačno uporabniško ime ali geslo" },
@@ -25,7 +23,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ustvari JWT token BREZ expiration (traja dokler se user ne odjavi)
+    // Ustvari JWT token BREZ expiration
     const token = jwt.sign(
       { 
         username,
@@ -33,7 +31,6 @@ export async function POST(request: NextRequest) {
         timestamp: Date.now()
       },
       jwtSecret
-      // BREZ expiresIn - token traja "večno"
     )
 
     return NextResponse.json({
