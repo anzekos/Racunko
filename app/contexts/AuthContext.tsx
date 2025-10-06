@@ -24,8 +24,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   useEffect(() => {
+    console.log("🔄 AuthProvider mounted, checking auth...")
     checkAuth()
   }, [pathname])
+
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin
+    }
+    return ''
+  }
 
   const checkAuth = async () => {
     try {
@@ -35,8 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const token = localStorage.getItem("token")
+      console.log("🔍 Auth check - Token exists:", !!token)
       
       if (!token) {
+        console.log("❌ No token found, redirecting to login")
         setLoading(false)
         if (pathname !== "/login") {
           window.location.href = "/login"
@@ -44,9 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      console.log("Checking auth with token:", token.substring(0, 20) + "...")
+      console.log("🔐 Checking auth with token:", token.substring(0, 20) + "...")
 
-      const response = await fetch("/api/auth/verify", {
+      const baseUrl = getBaseUrl()
+      console.log("🌐 Making request to:", `${baseUrl}/api/auth/verify`)
+      
+      const response = await fetch(`${baseUrl}/api/auth/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,21 +67,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ token }),
       })
 
-      // Preveri, ali je response OK in ima vsebino
+      console.log("📡 Verify response status:", response.status)
+      
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error("❌ HTTP error:", response.status, errorText)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("Verify response:", data)
+      console.log("✅ Verify response data:", data)
 
       if (data.valid) {
+        console.log("🎉 Auth successful, user:", data.user)
         setUser(data.user)
         if (pathname === "/login") {
+          console.log("🔀 Redirecting from login to home")
           window.location.href = "/"
         }
       } else {
-        console.log("Token invalid, logging out")
+        console.log("❌ Token invalid, logging out")
         localStorage.removeItem("token")
         setUser(null)
         if (pathname !== "/login") {
@@ -76,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error("Auth check error:", error)
+      console.error("💥 Auth check error:", error)
       localStorage.removeItem("token")
       setUser(null)
       if (pathname !== "/login") {
@@ -88,14 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const login = (token: string, userData: User) => {
-    console.log("Login function called - setting token and redirecting")
+    console.log("🔑 Login function called, setting token and redirecting")
     localStorage.setItem("token", token)
     setUser(userData)
-    // Uporabi window.location za zanesljiv redirect
     window.location.href = "/"
   }
 
   const logout = () => {
+    console.log("🚪 Logout called")
     localStorage.removeItem("token")
     setUser(null)
     window.location.href = "/login"

@@ -14,13 +14,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
 
+  // Funkcija za pridobivanje osnovnega URL
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin
+    }
+    return ''
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
 
     try {
-      const response = await fetch("/api/auth/login", {
+      // UPORABI ABSOLUTNO POT
+      const baseUrl = getBaseUrl()
+      const response = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,7 +42,6 @@ export default function LoginPage() {
 
       if (response.ok) {
         console.log("Login successful, calling login function")
-        // Samo kliči login funkcijo - ona bo poskrbela za redirect
         login(data.token, data.user)
       } else {
         setError(data.error || "Napaka pri prijavi")
@@ -102,6 +111,16 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* Demo credentials za testiranje */}
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <h3 className="text-sm font-medium text-yellow-800 mb-2">
+              Demo podatki za testiranje:
+            </h3>
+            <p className="text-xs text-yellow-700">
+              Uporabniško ime: <strong>admin</strong><br />
+              Geslo: <strong>moje_zelo_varno_geslo_123</strong>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
