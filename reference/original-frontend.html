@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upravljanje s Strankami</title>
+    <style>
+        .container {
+            overflow-x: auto;
+            margin-left: 160px;
+        }
+
+        .sticky-panel {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            background: white;
+            z-index: 100;
+            padding: 10px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .input-table { 
+            margin: 20px;
+            table-layout: fixed;
+        }
+
+        .data-table {
+            border-collapse: collapse;
+            margin: 20px;
+            table-layout: fixed;
+            min-width: 100%;
+        }
+
+        .data-table, .data-table td, .data-table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+            min-width: 120px;
+        }
+
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 50;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .edit-input { width: 100%; }
+        .read-only { background-color: #f0f0f0; }
+
+        .autocomplete { position: relative; }
+        .autocomplete-items { 
+            position: absolute; 
+            border: 1px solid #d4d4d4;
+            z-index: 99;
+            width: 100%;
+        }
+        .autocomplete-item {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff; 
+            border-bottom: 1px solid #d4d4d4;
+        }
+        .autocomplete-item:hover { background-color: #e9e9e9; }
+
+        .input-table {
+            width: 100%;
+        }
+
+        .input-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .input-table th, .input-table td {
+            text-align: left;
+            padding: 5px;
+            min-width: 120px;
+        }
+
+        .input-table input {
+            width: 127px;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+
+        .autocomplete {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-radius: 4px;
+            z-index: 999;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            width: 100%;
+            background-color: white;
+        }
+
+        .autocomplete-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item strong {
+            color: #0066cc;
+            font-weight: 600;
+        }
+        
+        /* Stili za avtomatsko dopolnjevanje Strank */
+        .stranka-autocomplete {
+            position: relative;
+            width: 100%;
+        }
+        .stranka-autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .stranka-autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+        .stranka-autocomplete-items div:hover {
+            background-color: #e9e9e9;
+        }
+        .stranka-autocomplete-active {
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="sticky-panel">
+        <button onclick="addEntry()">Dodaj v bazo</button>
+    </div>
+
+    <div class="container">
+        <div class="input-table">
+            <table id="inputForm">
+                <tr id="headers"></tr>
+                <tr id="inputs"></tr>
+            </table>
+        </div>
+
+        <div id="dataDisplay"></div>
+    </div>
+
+    <script>
+        const columns = [
+            'Stranka', 'Naslov', 'Kraj_postna_st', 'email', 'ID_DDV', 'Ukrep', 'JR', 'Pogodba',
+            'VLG', 'VLG_z_DDV', 'Gotovina_1', 'Status_1', 'Racun_izdal_1', 'Opomba_Ponudba',
+            'Provizija', 'ODL', 'ODL_z_DDV', 'Gotovina_2', 'Status_2', 'Racun_izdal_2',
+            'Delež_odločba', 'ZAH1', 'ZAH1_z_DDV', 'Gotovina_3', 'Status_3', 'Racun_izdal_3',
+            'Delež_zah1', 'ZAH2', 'ZAH2_z_DDV', 'Gotovina_4', 'Status_4', 'Racun_izdal_4',
+            'Delež_zah2', 'ZAH3', 'ZAH3_z_DDV', 'Gotovina_5', 'Status_5', 'Racun_izdal_5',
+            'Delež_zah3', 'ZAH4', 'ZAH4_z_DDV', 'Gotovina_6', 'Status_6', 'Racun_izdal_6',
+            'Delež_zah4', 'ZAH5', 'ZAH5_z_DDV', 'Gotovina_7', 'Status_7', 'Racun_izdal_7',
+            'Delež_zah5', 'Informacije', 'ODL_izplacano', 'ZAH1_izplacano', 'ZAH2_izplacano',
+            'ZAH3_izplacano', 'ZAH4_izplacano', 'ZAH5_izplacano', 'Izplacano', 'Status_8',
+            'SKUPAJ', 'KONTROLA'
+        ];
+
+        const numericFields = [
+            'VLG', 'VLG_z_DDV', 'Gotovina_1', 'Gotovina_2', 'Gotovina_3', 
+            'Gotovina_4', 'Gotovina_5', 'Gotovina_6', 'Gotovina_7', 'Provizija',
+            'ODL', 'ODL_z_DDV', 'ODL_izplacano', 'Delež_odločba', 'Delež_zah1',
+            'Delež_zah2', 'Delež_zah3', 'Delež_zah4', 'Delež_zah5', 'ZAH1',
+            'ZAH1_z_DDV', 'ZAH1_izplacano', 'ZAH2', 'ZAH2_z_DDV', 'ZAH2_izplacano',
+            'ZAH3', 'ZAH3_z_DDV', 'ZAH3_izplacano', 'ZAH4', 'ZAH4_z_DDV',
+            'ZAH4_izplacano', 'ZAH5', 'ZAH5_z_DDV', 'ZAH5_izplacano', 'Izplacano', 'SKUPAJ'
+        ];
+
+        const formulaFields = ['ODL', 'ZAH1', 'ZAH2', 'ZAH3', 'ZAH4', 'ZAH5'];
+        const ddvMap = {
+            'VLG': 'VLG_z_DDV',
+            'ODL': 'ODL_z_DDV',
+            'ZAH1': 'ZAH1_z_DDV',
+            'ZAH2': 'ZAH2_z_DDV',
+            'ZAH3': 'ZAH3_z_DDV',
+            'ZAH4': 'ZAH4_z_DDV',
+            'ZAH5': 'ZAH5_z_DDV'
+        };
+
+        // Spremenljivka za shranjevanje podatkov o strankah iz baze
+        let stranke = [];
+        
+        // Funkcija za nalaganje podatkov o strankah iz baze
+        async function loadStranke() {
+            try {
+                const response = await fetch('http://localhost:3000/stranka');
+                stranke = await response.json();
+                console.log('Podatki o strankah naloženi:', stranke);
+            } catch (error) {
+                console.error('Napaka pri nalaganju podatkov o strankah:', error);
+            }
+        }
+
+        // Funkcija za avtomatsko dopolnjevanje za polje Stranka
+        function autocompleteStranka(inp) {
+            let currentFocus;
+            
+            inp.addEventListener("input", function(e) {
+                let a, b, i, val = this.value;
+                
+                // Zapri morebitne že odprte sezname
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                
+                // Ustvari DIV element, ki bo vseboval predloge
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "stranka-autocomplete-items");
+                
+                // Dodaj DIV kot otroka avtomatskega dopolnjevanja
+                this.parentNode.appendChild(a);
+                
+                // Filtriraj stranke glede na vnos
+                const filteredStranke = stranke.filter(stranka => 
+                    stranka.Stranka && stranka.Stranka.toLowerCase().includes(val.toLowerCase())
+                );
+                
+                // Prikaži predloge
+                for (i = 0; i < filteredStranke.length; i++) {
+                    // Ustvari DIV element za vsako predlogo
+                    b = document.createElement("DIV");
+                    
+                    // Označi ujemajoče se črke krepko
+                    const matchStart = filteredStranke[i].Stranka.toLowerCase().indexOf(val.toLowerCase());
+                    const matchEnd = matchStart + val.length;
+                    
+                    if (matchStart !== -1) {
+                        // Če se ujema, označi ujemajoči se del krepko
+                        b.innerHTML = filteredStranke[i].Stranka.substring(0, matchStart);
+                        b.innerHTML += "<strong>" + filteredStranke[i].Stranka.substring(matchStart, matchEnd) + "</strong>";
+                        b.innerHTML += filteredStranke[i].Stranka.substring(matchEnd);
+                    } else {
+                        b.innerHTML = filteredStranke[i].Stranka;
+                    }
+                    
+                    // Dodaj dodatne informacije (naslov)
+                    b.innerHTML += "<br><small>" + (filteredStranke[i].Naslov || '') + "</small>";
+                    
+                    // Shrani podatke o stranki v element
+                    b.dataset.stranka = JSON.stringify(filteredStranke[i]);
+                    
+                    // Ob kliku na predlogo, izpolni polja
+                    b.addEventListener("click", function(e) {
+                        const selectedStranka = JSON.parse(this.dataset.stranka);
+                        inp.value = selectedStranka.Stranka || '';
+                        
+                        // Izpolni ostala polja s podatki iz baze
+                        document.querySelector('input[name="Naslov"]').value = selectedStranka.Naslov || '';
+                        document.querySelector('input[name="Kraj_postna_st"]').value = selectedStranka.Kraj_postna_st || '';
+                        document.querySelector('input[name="email"]').value = selectedStranka.email || '';
+                        document.querySelector('input[name="ID_DDV"]').value = selectedStranka.ID_DDV || '';
+                        
+                        // Zapri seznam predlog
+                        closeAllLists();
+                    });
+                    a.appendChild(b);
+                }
+            });
+            
+            // Navigacija s tipkovnico
+            inp.addEventListener("keydown", function(e) {
+                let x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) { // Puščica navzdol
+                    currentFocus++;
+                    addActive(x);
+                } else if (e.keyCode == 38) { // Puščica navzgor
+                    currentFocus--;
+                    addActive(x);
+                } else if (e.keyCode == 13) { // Enter
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            
+            function addActive(x) {
+                if (!x) return false;
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                x[currentFocus].classList.add("stranka-autocomplete-active");
+            }
+            
+            function removeActive(x) {
+                for (let i = 0; i < x.length; i++) {
+                    x[i].classList.remove("stranka-autocomplete-active");
+                }
+            }
+            
+            function closeAllLists(elmnt) {
+                let x = document.getElementsByClassName("stranka-autocomplete-items");
+                for (let i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            
+            // Zapri seznam ob kliku drugje
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+        // Premaknjeno iz createAutocomplete v globalni obseg
+        function calculateFormula(formula) {
+            // Ustvari regex z mejo besede, da se izognemo zamenjavi delov imen
+            const fieldRegex = new RegExp(`\\b(${numericFields.map(field => 
+                field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            ).join('|')})\\b`, 'g');
+            
+            // Pridobi trenutne vrednosti vseh polj
+            const currentValues = {};
+            numericFields.forEach(field => {
+                let fieldInput = document.querySelector(`input[name="${field}"]`);
+                if (!fieldInput) {
+                    fieldInput = document.querySelector(`input[name="edit_${field}"]`);
+                }
+                currentValues[field] = fieldInput?.value ? parseFloat(fieldInput.value) : 0;
+            });
+
+            try {
+                let expression = formula;
+                expression = expression.replace(fieldRegex, (match) => {
+                    return currentValues[match] !== undefined ? currentValues[match] : match;
+                });
+                
+                const result = eval(expression);
+                return isNaN(result) ? "0.00" : result.toFixed(2);
+            } catch (error) {
+                console.error('Napaka v formuli:', error);
+                return null;
+            }
+        }
+
+        // Premaknjeno iz createAutocomplete v globalni obseg
+        function updateFormulas() {
+            formulaFields.forEach(field => {
+                const input = document.querySelector(`input[name="${field}"]`);
+                if (input && input.value && /[+\-*/(]/.test(input.value)) {
+                    const result = calculateFormula(input.value);
+                    if (result !== null) {
+                        input.value = result;
+                    }
+                }
+            });
+            
+            // Posodobi DDV vrednosti
+            Object.keys(ddvMap).forEach(baseField => {
+                const baseInput = document.querySelector(`input[name="${baseField}"]`);
+                const ddvInput = document.querySelector(`input[name="${ddvMap[baseField]}"]`);
+                if (baseInput && ddvInput) {
+                    const value = parseFloat(baseInput.value) || 0;
+                    ddvInput.value = (value * 1.22).toFixed(2);
+                }
+            });
+            
+            calculateTotals(); // Posodobi skupne vrednosti
+        }
+
+        // Funkcija za izračun skupnih vrednosti
+        function calculateTotals() {
+            const values = numericFields.reduce((acc, field) => {
+                const input = document.querySelector(`input[name="${field}"]`);
+                acc[field] = input?.value ? parseFloat(input.value) : 0;
+                return acc;
+            }, {});
+
+            const skupajInput = document.querySelector('input[name="SKUPAJ"]');
+            const kontrolaInput = document.querySelector('input[name="KONTROLA"]');
+            const izplacanoInput = document.querySelector('input[name="Izplacano"]');
+            
+            if (skupajInput) {
+                skupajInput.value = 
+                    formulaFields.reduce((acc, field) => acc + (values[field] || 0), 0).toFixed(2);
+            }
+
+            if (kontrolaInput) {
+                kontrolaInput.value = 
+                    (values.VLG + (values.Izplacano * values.Provizija)).toFixed(2);
+            }
+
+            if (izplacanoInput) {
+                izplacanoInput.value = 
+                    numericFields.filter(f => f.includes('_izplacano'))
+                        .reduce((acc, field) => acc + values[field], 0).toFixed(2);
+            }
+        }
+
+        function createAutocomplete(input) {
+            let currentList = null;
+            let selectedIndex = -1;
+
+            // Function to update autocomplete list
+            function updateAutocompleteList() {
+                // Remove any existing list
+                if (currentList) {
+                    currentList.remove();
+                    currentList = null;
+                }
+                
+                const value = input.value;
+                // Get the last token after operators
+                const lastWord = value.split(/[\+\-\*\/$$$$\s]/).pop().trim();
+                
+                // Only show suggestions if we have at least 1 character
+                if (lastWord.length < 1) return;
+                
+                // Filter matching fields
+                const matches = numericFields.filter(f => 
+                    f.toLowerCase().includes(lastWord.toLowerCase())
+                );
+                
+                if (matches.length === 0) return;
+                
+                // Create suggestion list
+                const list = document.createElement('div');
+                list.className = 'autocomplete-items';
+                currentList = list;
+                selectedIndex = -1;
+                
+                matches.forEach((match, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.setAttribute('data-value', match);
+                    div.innerHTML = match.replace(new RegExp(lastWord, 'i'), '<strong>$&</strong>');
+                    
+                    div.addEventListener('click', () => {
+                        replaceLastWord(match);
+                        list.remove();
+                        currentList = null;
+                    });
+                    
+                    list.appendChild(div);
+                });
+                
+                input.parentNode.appendChild(list);
+            }
+
+            // Function to replace the last word with selected suggestion
+            function replaceLastWord(replacement) {
+                const value = input.value;
+                const lastWordRegex = /[\+\-\*\/$$$$\s]([^\+\-\*\/$$$$\s]*)$/;
+                const match = value.match(lastWordRegex);
+                
+                if (match) {
+                    // If we found a match after an operator
+                    const startPos = value.lastIndexOf(match[1]);
+                    input.value = value.substring(0, startPos) + replacement + ' ';
+                } else {
+                    // If it's at the beginning of the string
+                    input.value = replacement + ' ';
+                }
+                
+                input.focus();
+            }
+            
+            // Handle keyboard events
+            input.addEventListener('keydown', function(e) {
+                if (currentList) {
+                    const items = currentList.querySelectorAll('.autocomplete-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                        highlightSelected(items);
+                    } 
+                    else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        selectedIndex = Math.max(selectedIndex - 1, 0);
+                        highlightSelected(items);
+                    }
+                    else if (e.key === 'Tab' || e.key === 'Enter') {
+                        e.preventDefault();
+                        
+                        if (selectedIndex >= 0 && items[selectedIndex]) {
+                            // If an item is selected, use it
+                            const selectedValue = items[selectedIndex].getAttribute('data-value');
+                            replaceLastWord(selectedValue);
+                            currentList.remove();
+                            currentList = null;
+                        } 
+                        else if (items.length === 1) {
+                            // If only one suggestion, use it automatically
+                            const onlyValue = items[0].getAttribute('data-value');
+                            replaceLastWord(onlyValue);
+                            currentList.remove();
+                            currentList = null;
+                        }
+                    }
+                    else if (e.key === 'Escape') {
+                        currentList.remove();
+                        currentList = null;
+                    }
+                }
+                else if (e.key === 'Enter') {
+                    // If Enter pressed with no suggestions, calculate the formula
+                    e.preventDefault();
+                    const result = calculateFormula(input.value);
+                    if (result !== null) {
+                        input.value = result;
+                        const event = new Event('input', { bubbles: true });
+                        input.dispatchEvent(event);
+                    }
+                }
+            });
+            
+            // Show suggestions on input
+            input.addEventListener('input', updateAutocompleteList);
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && currentList) {
+                    currentList.remove();
+                    currentList = null;
+                }
+            });
+            
+            function highlightSelected(items) {
+                items.forEach((item, idx) => {
+                    if (idx === selectedIndex) {
+                        item.style.backgroundColor = '#e0e0e0';
+                    } else {
+                        item.style.backgroundColor = '';
+                    }
+                });
+            }
+        }
+
+        function initInputs() {
+            const headers = document.getElementById('headers');
+            const inputs = document.getElementById('inputs');
+
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headers.appendChild(th);
+
+                const td = document.createElement('td');
+                
+                if (col === 'Stranka') {
+                    // Posebna obravnava za polje Stranka z avtomatskim dopolnjevanjem
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'stranka-autocomplete';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = col;
+                    input.placeholder = "Vnesite ime stranke...";
+                    
+                    // Nastavimo avtomatsko dopolnjevanje za Stranka
+                    autocompleteStranka(input);
+                    
+                    wrapper.appendChild(input);
+                    td.appendChild(wrapper);
+                }
+                else if (formulaFields.includes(col)) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'autocomplete';
+                    
+                    const input = document.createElement('input');
+                    input.placeholder = "Vnesi formulo...";
+                    input.name = col;
+                    createAutocomplete(input);
+                    
+                    wrapper.appendChild(input);
+                    td.appendChild(wrapper);
+                } 
+                else if (Object.values(ddvMap).includes(col)) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = "0.01";
+                    input.name = col;
+                    input.readOnly = true;
+                    input.classList.add('read-only');
+                    td.appendChild(input);
+                } 
+                else if (['SKUPAJ', 'KONTROLA', 'Izplacano'].includes(col)) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = col;
+                    input.readOnly = true;
+                    input.classList.add('read-only');
+                    td.appendChild(input);
+                } 
+                else {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = col;
+                    td.appendChild(input);
+                }
+                
+                inputs.appendChild(td);
+            });
+
+            Object.keys(ddvMap).forEach(baseField => {
+                const input = document.querySelector(`input[name="${baseField}"]`);
+                const ddvInput = document.querySelector(`input[name="${ddvMap[baseField]}"]`);
+                
+                input?.addEventListener('input', () => {
+                    const value = parseFloat(input.value) || 0;
+                    ddvInput.value = (value * 1.22).toFixed(2);
+                });
+            });
+
+            // Event listenerji za vse numerična polja
+            numericFields.forEach(field => {
+                const input = document.querySelector(`input[name="${field}"]`);
+                input?.addEventListener('input', () => {
+                    updateFormulas();
+                });
+            });
+        }
+
+        async function addEntry() {
+            const data = {};
+
+            columns.forEach(col => {
+                const input = document.querySelector(`input[name="${col}"]`);
+                if (!input) return;
+
+                if (formulaFields.includes(col)) {
+                    try {
+                        const currentValues = numericFields.reduce((acc, field) => {
+                            const fieldInput = document.querySelector(`input[name="${field}"]`);
+                            acc[field] = fieldInput?.value ? parseFloat(fieldInput.value) : 0;
+                            return acc;
+                        }, {});
+
+                        const fieldRegex = new RegExp(`\\b(${numericFields.map(field => 
+                            field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                        ).join('|')})\\b`, 'g');
+
+                        const expression = input.value.replace(fieldRegex, (match) => {
+                            return currentValues[match] ?? 0;
+                        });
+                        data[col] = eval(expression) || 0;
+                    } catch (error) {
+                        data[col] = 0;
+                    }
+                } 
+                else if (numericFields.includes(col)) {
+                    data[col] = parseFloat(input.value) || 0;
+                } 
+                else {
+                    data[col] = input.value || '';
+                }
+            });
+
+            // Preveri vrednosti DDV
+            Object.keys(ddvMap).forEach(baseField => {
+                const ddvField = ddvMap[baseField];
+                data[ddvField] = (data[baseField] || 0) * 1.22;
+            });
+
+            try {
+                const response = await fetch('http://localhost:3000/stranka', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Počisti obrazec
+                document.querySelectorAll('#inputs input').forEach(input => {
+                    if (!input.readOnly) input.value = '';
+                });
+
+                // Ponovno naloži podatke
+                await loadData();
+                alert('Vnos uspešno dodan!');
+            } catch (error) {
+                console.error('Napaka:', error);
+                alert('Napaka pri dodajanju: ' + error.message);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('http://localhost:3000/stranka');
+                const data = await response.json();
+                
+                const table = document.createElement('table');
+                table.className = 'data-table';
+                
+                // Glava tabele
+                const thead = document.createElement('tr');
+                columns.forEach(text => {
+                    const th = document.createElement('th');
+                    th.textContent = text;
+                    thead.appendChild(th);
+                });
+                thead.innerHTML += '<th class="sticky-col">Akcije</th>';
+                table.appendChild(thead);
+
+                // Vsebina tabele
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        ${columns.map(col => `
+                            <td>${
+                                numericFields.includes(col) ? 
+                                parseFloat(row[col] || 0).toFixed(2) : 
+                                (row[col] || '')
+                            }</td>
+                        `).join('')}
+                        <td class="sticky-col">
+                            <button onclick="toggleEdit(${row.id})">Uredi</button>
+                        </td>
+                    `;
+                    table.appendChild(tr);
+                });
+
+                document.getElementById('dataDisplay').replaceChildren(table);
+            } catch (error) {
+                console.error('Napaka:', error);
+                alert('Napaka pri nalaganju podatkov');
+            }
+        }
+
+        async function toggleEdit(id) {
+            const row = document.querySelector(`tr:has(button[onclick*="${id}"])`);
+            const cells = row.querySelectorAll('td');
+
+            // Ustvarjanje map za shranjevanje referenc na inpute
+            const inputMap = {};
+            const editWrappers = {};
+
+            columns.forEach((col, i) => {
+                const cell = cells[i];
+                const originalValue = cell.textContent.trim();
+                
+                // Počisti celico
+                cell.textContent = '';
+                
+                // Ustvari polje za vnos
+                if (col === 'Stranka') {
+                    // Posebna obravnava za polje Stranka v načinu urejanja
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'stranka-autocomplete';
+                    
+                    const input = document.createElement('input');
+                    input.className = 'edit-input';
+                    input.name = `edit_${col}`;
+                    input.value = originalValue;
+                    input.placeholder = "Vnesite ime stranke...";
+                    
+                    wrapper.appendChild(input);
+                    cell.appendChild(wrapper);
+                    
+                    // Nastavimo avtomatsko dopolnjevanje za Stranka tudi v načinu urejanja
+                    autocompleteStranka(input);
+                }
+                else if (formulaFields.includes(col)) {
+                    // Ustvari wrapper za autocomplete
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'autocomplete';
+                    
+                    const input = document.createElement('input');
+                    input.className = 'edit-input';
+                    input.name = `edit_${col}`;
+                    input.value = originalValue;
+                    input.placeholder = "Vnesi formulo...";
+                    
+                    wrapper.appendChild(input);
+                    cell.appendChild(wrapper);
+                    
+                    // Shrani referenco na wrapper
+                    editWrappers[col] = wrapper;
+                    
+                    // Nastavi autocomplete za vnos formule
+                    createAutocomplete(input);
+                } 
+                else if (Object.values(ddvMap).includes(col)) {
+                    const input = document.createElement('input');
+                    input.className = 'edit-input read-only';
+                    input.name = `edit_${col}`;
+                    input.value = originalValue;
+                    input.readOnly = true;
+                    input.type = 'number';
+                    input.step = "0.01";
+                    cell.appendChild(input);
+                } 
+                else if (['SKUPAJ', 'KONTROLA', 'Izplacano'].includes(col)) {
+                    const input = document.createElement('input');
+                    input.className = 'edit-input read-only';
+                    input.name = `edit_${col}`;
+                    input.value = originalValue;
+                    input.readOnly = true;
+                    cell.appendChild(input);
+                } 
+                else if (numericFields.includes(col)) {
+                    const input = document.createElement('input');
+                    input.className = 'edit-input';
+                    input.name = `edit_${col}`;
+                    input.value = originalValue;
+                    input.type = 'number';
+                    input.step = "0.01";
+                    cell.appendChild(input);
+                } 
+                else {
+                    const input = document.createElement('input');
+                    input.className = 'edit-input';
+                    input.name = `edit_${col}`;
+                    input.value = originalValue;
+                    input.type = 'text';
+                    cell.appendChild(input);
+                }
+                
+                // Shrani referenco na input
+                inputMap[col] = cell.querySelector('input');
+            });
+
+            // Nastavi funkcionalnost DDV
+            Object.keys(ddvMap).forEach(baseField => {
+                const baseInput = inputMap[baseField];
+                const ddvInput = inputMap[ddvMap[baseField]];
+                
+                baseInput?.addEventListener('input', () => {
+                    const value = parseFloat(baseInput.value) || 0;
+                    ddvInput.value = (value * 1.22).toFixed(2);
+                    
+                    // Po spremembi DDV ponovno izračunaj ostale vrednosti
+                    calculateEditModeValues(inputMap);
+                });
+            });
+
+            // Funkcija za izračun vrednosti v načinu urejanja
+            function calculateEditModeValues(inputs) {
+                const values = numericFields.reduce((acc, field) => {
+                    const input = inputs[field];
+                    acc[field] = input?.value ? parseFloat(input.value) : 0;
+                    return acc;
+                }, {});
+
+                // Izračun skupne vrednosti
+                if (inputs['SKUPAJ']) {
+                    inputs['SKUPAJ'].value = 
+                        formulaFields.reduce((acc, field) => acc + (values[field] || 0), 0).toFixed(2);
+                }
+
+                // Izračun kontrole
+                if (inputs['KONTROLA']) {
+                    inputs['KONTROLA'].value = 
+                        (values.VLG + (values.Izplacano * values.Provizija)).toFixed(2);
+                }
+
+                // Izračun izplačanega
+                if (inputs['Izplacano']) {
+                    inputs['Izplacano'].value = 
+                        numericFields.filter(f => f.includes('_izplacano'))
+                            .reduce((acc, field) => acc + values[field], 0).toFixed(2);
+                }
+            }
+
+            // Nastavi poslušalce za vnos za vse numerične vrednosti
+            numericFields.forEach(field => {
+                const input = inputMap[field];
+                input?.addEventListener('input', () => calculateEditModeValues(inputMap));
+            });
+
+            // Izračun začetnih vrednosti
+            calculateEditModeValues(inputMap);
+
+            // Spremeni gumb
+            const btn = row.querySelector('button');
+            btn.textContent = 'Shrani';
+            btn.onclick = async () => {
+                const data = { id };
+                columns.forEach((col) => {
+                    const input = inputMap[col];
+                    if (!input) return;
+
+                    if (formulaFields.includes(col)) {
+                        // Poskusi izračunati formulo
+                        try {
+                            const currentValues = numericFields.reduce((acc, field) => {
+                                acc[field] = parseFloat(inputMap[field]?.value) || 0;
+                                return acc;
+                            }, {});
+                            
+                            // Če je vnos videti kot formula, jo izračunaj
+                            if (input.value.includes('+') || input.value.includes('-') || 
+                                input.value.includes('*') || input.value.includes('/')) {
+                                
+                                const expression = input.value.replace(
+                                    new RegExp(numericFields.join('|'), 'g'), 
+                                    match => currentValues[match] ?? 0
+                                );
+                                data[col] = eval(expression) || 0;
+                            } else {
+                                // Drugače samo preberi vrednost
+                                data[col] = parseFloat(input.value) || 0;
+                            }
+                        } catch (error) {
+                            console.error(`Napaka v ${col}:`, error);
+                            data[col] = parseFloat(input.value) || 0;
+                        }
+                    } 
+                    else if (numericFields.includes(col)) {
+                        data[col] = parseFloat(input.value) || 0;
+                    } 
+                    else {
+                        data[col] = input.value || '';
+                    }
+                });
+
+                // Prepričaj se, da so vrednosti DDV pravilno izračunane
+                Object.keys(ddvMap).forEach(baseField => {
+                    const ddvField = ddvMap[baseField];
+                    data[ddvField] = (data[baseField] || 0) * 1.22;
+                });
+
+                try {
+                    await fetch(`http://localhost:3000/stranka/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    await loadData();
+                } catch (error) {
+                    console.error('Napaka:', error);
+                    alert('Napaka pri shranjevanju: ' + error.message);
+                }
+            };
+        }
+
+        // Inicializacija ob nalaganju strani
+        async function initialize() {
+            await loadStranke();
+            initInputs();
+            loadData();
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
