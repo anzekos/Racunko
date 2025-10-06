@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -209,8 +208,8 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue
 }
 
-// Nova komponenta FiltersAndSearch z uporabo React.memo za preprečevanje nepotrebnih re-renderjev
-const FiltersAndSearch = React.memo(({
+// Nova komponenta FiltersAndSearch - POPRAVLJENA BREZ React.memo
+const FiltersAndSearch = ({
   searchTerm,
   onSearchChange,
   filters,
@@ -367,9 +366,7 @@ const FiltersAndSearch = React.memo(({
       </div>
     </div>
   )
-})
-
-FiltersAndSearch.displayName = 'FiltersAndSearch'
+}
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
