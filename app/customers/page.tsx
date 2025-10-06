@@ -273,11 +273,11 @@ export default function CustomersPage() {
   }, [])
 
   // Ohrani fokus na iskalnem polju ob renderju
-  useEffect(() => {
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [searchTerm, showFilters]);
+  // useEffect(() => {
+  //   if (searchInputRef.current) {
+  //     searchInputRef.current.focus();
+  //   }
+  // }, [searchTerm, showFilters]);
 
   const loadCustomers = async () => {
     try {
@@ -854,26 +854,28 @@ export default function CustomersPage() {
         <div className="flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
+            <Input 
               ref={searchInputRef}
               placeholder="Išči po vseh podatkih..."
               value={searchTerm}
               onChange={handleSearchChange}
               className="pl-10 pr-10"
-              autoFocus
+              // Samo ob prvem renderju ali brez avtomatskega fokusa
+              autoFocus={false}
             />
             {searchTerm && (
               <X 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 cursor-pointer"
-                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 cursor-pointer" 
+                onClick={() => {
+                  setSearchTerm("")
+                  // Opcijsko: postavi fokus nazaj na iskalno polje ob brisanju
+                  searchInputRef.current?.focus()
+                }} 
               />
             )}
           </div>
-          <Button 
-            variant="outline" 
-            onClick={toggleFilters}
-            className="flex items-center gap-2"
-          >
+          {/* Ostali elementi ostanejo nespremenjeni */}
+          <Button variant="outline" onClick={toggleFilters} className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
             Filtri
             {Object.values(filters).some(val => val !== "" && val !== false) && (
