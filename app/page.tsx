@@ -5,13 +5,16 @@ import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, FileText, TrendingUp, Database } from "lucide-react"
+import { Users, FileText, TrendingUp, Database, LogOut } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useAuth } from "@/app/contexts/AuthContext"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
-export default function HomePage() {
+function HomePageContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const { user, logout } = useAuth()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -26,7 +29,30 @@ export default function HomePage() {
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
 
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-16" : "ml-64"}`}>
-        <Header />
+        {/* Header z user info in logout */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Računko</h1>
+              <p className="text-sm text-gray-600">Celovita rešitev za upravljanje strank in računov</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">Prijavljeni kot: {user?.username}</p>
+                <p className="text-xs text-gray-600">{user?.role}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={logout}
+                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Odjava
+              </Button>
+            </div>
+          </div>
+        </header>
 
         <main className="flex-1 overflow-hidden">
           <div className="h-full overflow-y-auto">
@@ -120,7 +146,7 @@ export default function HomePage() {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center p-4 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold text-primary">Demo</div>
+                        <div className="text-2xl font-bold text-primary">Testiranje</div>
                         <div className="text-sm text-muted-foreground">Način delovanja</div>
                       </div>
                       <div className="text-center p-4 bg-muted rounded-lg">
@@ -128,7 +154,7 @@ export default function HomePage() {
                         <div className="text-sm text-muted-foreground">Stanje sistema</div>
                       </div>
                       <div className="text-center p-4 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold text-chart-4">v1.0</div>
+                        <div className="text-2xl font-bold text-chart-4">v1.6</div>
                         <div className="text-sm text-muted-foreground">Različica</div>
                       </div>
                     </div>
@@ -186,7 +212,7 @@ export default function HomePage() {
                       <Image src="/images/2km-logo.png" alt="2KM Consulting" fill className="object-contain" />
                     </div>
                   </div>
-                  <p>2KM Consulting d.o.o. • Anže Kos • Različica 1.4</p>
+                  <p>2KM Consulting d.o.o. • Anže Kos • Različica 1.6</p>
                   <p className="mt-1">Sistem za upravljanje strank in generiranje računov</p>
                 </div>
               </div>
@@ -195,5 +221,13 @@ export default function HomePage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <ProtectedRoute>
+      <HomePageContent />
+    </ProtectedRoute>
   )
 }

@@ -1,4 +1,4 @@
-import type React from "react"
+import { AuthProvider } from "@/app/contexts/AuthContext"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/images/logo-black.png",
   },
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -29,7 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sl" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 }
