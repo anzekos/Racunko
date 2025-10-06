@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +13,6 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,16 +31,9 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Uporabi login funkcijo iz AuthContext
-        console.log("Login successful, data:", data)
-
+        console.log("Login successful, calling login function")
+        // Samo kliči login funkcijo - ona bo poskrbela za redirect
         login(data.token, data.user)
-        // DODAJ: Ročno preusmeri za zanesljivost
-        setTimeout(() => {
-          console.log("Manual redirect")
-          router.push("/")
-          router.refresh()
-        }, 100)
       } else {
         setError(data.error || "Napaka pri prijavi")
       }
