@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken"
 export async function POST(request: NextRequest) {
   try {
     const { token } = await request.json()
-
     const jwtSecret = process.env.JWT_SECRET
 
     if (!jwtSecret) {
@@ -14,20 +13,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    try {
-      const decoded = jwt.verify(token, jwtSecret) as any
+    if (!token) {
+      return NextResponse.json(
+        { valid: false, error: "Token manjka" },
+        { status: 401 }
+      )
+    }
 
+    try {
+      // Preveri token
+      const decoded = jwt.verify(token, jwtSecret) as any
+      
       return NextResponse.json({
         valid: true,
-        user: { username: decoded.username, role: decoded.role }
+        user: {
+          username: decoded.username,
+          role: decoded.role
+        }
       })
-    } catch (error) {
-      return NextResponse.json({ valid: false })
+    } catch (jwtError) {
+      return NextResponse.json(
+        { valid: false, error: "Neveljaven token" },
+        { status: 401 }
+      )
     }
   } catch (error) {
     console.error("Verify error:", error)
     return NextResponse.json(
-      { error: "Napaka pri preverjanju" },
+      { valid: false, error: "Napaka pri preverjanju tokena" },
       { status: 500 }
     )
   }

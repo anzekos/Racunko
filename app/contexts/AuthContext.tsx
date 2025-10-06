@@ -39,11 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!token) {
         setLoading(false)
         if (pathname !== "/login") {
-          // Uporabi window.location za zanesljiv redirect
           window.location.href = "/login"
         }
         return
       }
+
+      console.log("Checking auth with token:", token.substring(0, 20) + "...")
 
       const response = await fetch("/api/auth/verify", {
         method: "POST",
@@ -53,7 +54,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ token }),
       })
 
+      // Preveri, ali je response OK in ima vsebino
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
+      console.log("Verify response:", data)
 
       if (data.valid) {
         setUser(data.user)
@@ -61,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           window.location.href = "/"
         }
       } else {
+        console.log("Token invalid, logging out")
         localStorage.removeItem("token")
         setUser(null)
         if (pathname !== "/login") {
