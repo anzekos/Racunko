@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -210,6 +209,168 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue
 }
 
+// Nova komponenta FiltersAndSearch z uporabo React.memo za preprečevanje nepotrebnih re-renderjev
+const FiltersAndSearch = React.memo(({
+  searchTerm,
+  onSearchChange,
+  filters,
+  onFilterChange,
+  showFilters,
+  onToggleFilters,
+  onResetFilters,
+  sortConfig,
+  statusOptions,
+  filteredAndSortedCustomers,
+  customers
+}: {
+  searchTerm: string
+  onSearchChange: (value: string) => void
+  filters: any
+  onFilterChange: (key: string, value: any) => void
+  showFilters: boolean
+  onToggleFilters: () => void
+  onResetFilters: () => void
+  sortConfig: any
+  statusOptions: string[]
+  filteredAndSortedCustomers: Customer[]
+  customers: Customer[]
+}) => {
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Funkcija za ročno nastavitev fokusa
+  const focusSearchInput = useCallback(() => {
+    searchInputRef.current?.focus()
+  }, [])
+
+  // Ob kliku na X ohranimo fokus
+  const handleClearSearch = useCallback(() => {
+    onSearchChange("")
+    setTimeout(focusSearchInput, 0)
+  }, [onSearchChange, focusSearchInput])
+
+  return (
+    <div className="mb-6 space-y-4">
+      {/* Iskalna vrstica */}
+      <div className="flex gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input 
+            ref={searchInputRef}
+            placeholder="Išči po vseh podatkih..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchTerm && (
+            <X 
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 cursor-pointer" 
+              onClick={handleClearSearch}
+            />
+          )}
+        </div>
+        <Button variant="outline" onClick={onToggleFilters} className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          Filtri
+          {Object.values(filters).some(val => val !== "" && val !== false) && (
+            <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+              !
+            </Badge>
+          )}
+        </Button>
+        <Button variant="outline" onClick={onResetFilters}>
+          Počisti
+        </Button>
+      </div>
+
+      {/* Področje s filtri */}
+      {showFilters && (
+        <div className="border rounded-lg p-4 bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Filter po statusu */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <select 
+                value={filters.status}
+                onChange={(e) => onFilterChange('status', e.target.value)}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="">Vsi statusi</option>
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter po znesku */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Znesek od</label>
+              <Input
+                type="number"
+                placeholder="Min znesek"
+                value={filters.minAmount}
+                onChange={(e) => onFilterChange('minAmount', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Znesek do</label>
+              <Input
+                type="number"
+                placeholder="Max znesek"
+                value={filters.maxAmount}
+                onChange={(e) => onFilterChange('maxAmount', e.target.value)}
+              />
+            </div>
+
+            {/* Checkbox filtri */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Dodatni filtri</label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={filters.hasEmail}
+                    onChange={(e) => onFilterChange('hasEmail', e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm">Samo z emailom</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={filters.hasContract}
+                    onChange={(e) => onFilterChange('hasContract', e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm">Samo s pogodbo</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Informacije o rezultatih */}
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-600">
+          Prikazano {filteredAndSortedCustomers.length} od {customers.length} strank
+          {searchTerm && (
+            <span> za iskalni niz "{searchTerm}"</span>
+          )}
+        </div>
+        
+        {sortConfig && (
+          <div className="text-sm text-gray-600">
+            Sortirano po: {sortConfig.key} ({sortConfig.direction === 'asc' ? 'naraščajoče' : 'padajoče'})
+          </div>
+        )}
+      </div>
+    </div>
+  )
+})
+
+FiltersAndSearch.displayName = 'FiltersAndSearch'
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [formData, setFormData] = useState<Partial<Customer>>({})
@@ -237,7 +398,7 @@ export default function CustomersPage() {
 
   // Dodani state-ji za filtre in iskanje
   const [searchTerm, setSearchTerm] = useState("")
-  const debouncedSearchTerm = useDebounce(searchTerm, 300) // Povečal na 300ms za boljše uporabniško izkušnjo
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [filters, setFilters] = useState({
     status: "",
     minAmount: "",
@@ -247,9 +408,6 @@ export default function CustomersPage() {
   })
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
   const [showFilters, setShowFilters] = useState(false)
-
-  // Ref za sledenje iskalnemu polju in ohranjanje fokusa
-  const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Ref za sledenje vnosnim poljem
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -271,13 +429,6 @@ export default function CustomersPage() {
   useEffect(() => {
     loadCustomers()
   }, [])
-
-  // Ohrani fokus na iskalnem polju ob renderju
-  // useEffect(() => {
-  //   if (searchInputRef.current) {
-  //     searchInputRef.current.focus();
-  //   }
-  // }, [searchTerm, showFilters]);
 
   const loadCustomers = async () => {
     try {
@@ -367,8 +518,8 @@ export default function CustomersPage() {
   }
 
   // Optimizirana funkcija za spremembo iskanja
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value)
   }, [])
 
   // Optimizirane funkcije za filtre
@@ -585,18 +736,6 @@ export default function CustomersPage() {
     }, 10)
     
     setFieldAutocomplete((prev) => ({ ...prev, show: false }))
-  }
-
-  // Funkcija za pridobivanje pozicije dropdowna
-  const getDropdownPosition = () => {
-    if (!fieldAutocomplete.inputRef) return { top: 0, left: 0 }
-    
-    const rect = fieldAutocomplete.inputRef.getBoundingClientRect()
-    return {
-      top: rect.bottom + window.scrollY,
-      left: rect.left + window.scrollX,
-      width: rect.width
-    }
   }
 
   // Popravljena funkcija za obdelavo sprememb vnosa
@@ -846,137 +985,7 @@ export default function CustomersPage() {
     )
   }
 
-  // Komponenta za filtre in iskanje - OPTIMIZIRANA
-  const FiltersAndSearch = () => {
-    return (
-      <div className="mb-6 space-y-4">
-        {/* Iskalna vrstica */}
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input 
-              ref={searchInputRef}
-              placeholder="Išči po vseh podatkih..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-10 pr-10"
-              // Samo ob prvem renderju ali brez avtomatskega fokusa
-              autoFocus={false}
-            />
-            {searchTerm && (
-              <X 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 cursor-pointer" 
-                onClick={() => {
-                  setSearchTerm("")
-                  // Opcijsko: postavi fokus nazaj na iskalno polje ob brisanju
-                  searchInputRef.current?.focus()
-                }} 
-              />
-            )}
-          </div>
-          {/* Ostali elementi ostanejo nespremenjeni */}
-          <Button variant="outline" onClick={toggleFilters} className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtri
-            {Object.values(filters).some(val => val !== "" && val !== false) && (
-              <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
-                !
-              </Badge>
-            )}
-          </Button>
-          <Button variant="outline" onClick={handleResetFilters}>
-            Počisti
-          </Button>
-        </div>
-
-        {/* Področje s filtri */}
-        {showFilters && (
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Filter po statusu */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <select 
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="">Vsi statusi</option>
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filter po znesku */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Znesek od</label>
-                <Input
-                  type="number"
-                  placeholder="Min znesek"
-                  value={filters.minAmount}
-                  onChange={(e) => handleFilterChange('minAmount', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Znesek do</label>
-                <Input
-                  type="number"
-                  placeholder="Max znesek"
-                  value={filters.maxAmount}
-                  onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
-                />
-              </div>
-
-              {/* Checkbox filtri */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Dodatni filtri</label>
-                <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.hasEmail}
-                      onChange={(e) => handleFilterChange('hasEmail', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-sm">Samo z emailom</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.hasContract}
-                      onChange={(e) => handleFilterChange('hasContract', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-sm">Samo s pogodbo</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Informacije o rezultatih */}
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            Prikazano {filteredAndSortedCustomers.length} od {customers.length} strank
-            {debouncedSearchTerm && (
-              <span> za iskalni niz "{debouncedSearchTerm}"</span>
-            )}
-          </div>
-          
-          {sortConfig && (
-            <div className="text-sm text-gray-600">
-              Sortirano po: {sortConfig.key} ({sortConfig.direction === 'asc' ? 'naraščajoče' : 'padajoče'})
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // Komponenta za prikaz tabele s podatki - OPTIMIZIRANA
+  // Komponenta za prikaz tabele s podatki
   const DataTable = () => {
     return (
       <div className="overflow-x-auto mt-6">
@@ -1065,7 +1074,6 @@ export default function CustomersPage() {
               <TabsTrigger value="summary">Povzetek</TabsTrigger>
             </TabsList>
 
-            {/* Ostala vsebina zavihkov ostaja enaka ... */}
             <TabsContent value="basic" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -1150,7 +1158,6 @@ export default function CustomersPage() {
               </div>
             </TabsContent>
 
-            {/* Ostali tabovi ostanejo nespremenjeni ... */}
             <TabsContent value="contract" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -1476,7 +1483,19 @@ export default function CustomersPage() {
           <CardTitle>Seznam strank</CardTitle>
         </CardHeader>
         <CardContent>
-          <FiltersAndSearch />
+          <FiltersAndSearch
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            showFilters={showFilters}
+            onToggleFilters={toggleFilters}
+            onResetFilters={handleResetFilters}
+            sortConfig={sortConfig}
+            statusOptions={statusOptions}
+            filteredAndSortedCustomers={filteredAndSortedCustomers}
+            customers={customers}
+          />
           <DataTable />
         </CardContent>
       </Card>
