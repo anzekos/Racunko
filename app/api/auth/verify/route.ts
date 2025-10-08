@@ -1,16 +1,18 @@
+// app/api/auth/verify/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🔐 Verify endpoint called")
+    console.log("🔐 Verify endpoint called - DEBUG")
+    console.log("URL:", request.url)
+    console.log("Method:", request.method)
     
     const { token } = await request.json()
     const jwtSecret = process.env.JWT_SECRET
 
-    console.log("📝 JWT_SECRET exists:", !!jwtSecret)
-    console.log("📏 JWT_SECRET length:", jwtSecret?.length)
-    console.log("🔑 Token received:", token ? `${token.substring(0, 20)}...` : 'MISSING')
+    console.log("JWT_SECRET exists:", !!jwtSecret)
+    console.log("Token received:", token ? `${token.substring(0, 20)}...` : 'MISSING')
 
     if (!jwtSecret) {
       console.error("❌ JWT_SECRET is missing")
@@ -29,7 +31,6 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Preveri token
       const decoded = jwt.verify(token, jwtSecret) as any
       console.log("✅ Token verified for user:", decoded.username)
       
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Dodaj tudi GET handler za preprečevanje napak
 export async function GET() {
+  console.log("❌ GET method called on verify endpoint")
   return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 })
 }
