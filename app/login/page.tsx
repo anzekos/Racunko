@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/app/contexts/AuthContext"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")

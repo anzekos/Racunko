@@ -46,10 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("🔍 Auth check - Token exists:", !!token)
       
       if (!token) {
-        console.log("❌ No token found, redirecting to login")
+        console.log("❌ No token found")
         setLoading(false)
         if (pathname !== "/login") {
-          window.location.href = "/login"
+          router.push("/login") // SPREMENJENO: router.push namesto window.location.href
         }
         return
       }
@@ -84,14 +84,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user)
         if (pathname === "/login") {
           console.log("🔀 Redirecting from login to home")
-          window.location.href = "/"
+          router.push("/") // SPREMENJENO: router.push namesto window.location.href
         }
       } else {
         console.log("❌ Token invalid, logging out")
         localStorage.removeItem("token")
         setUser(null)
         if (pathname !== "/login") {
-          window.location.href = "/login"
+          router.push("/login") // SPREMENJENO: router.push namesto window.location.href
         }
       }
     } catch (error) {
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("token")
       setUser(null)
       if (pathname !== "/login") {
-        window.location.href = "/login"
+        router.push("/login") // SPREMENJENO: router.push namesto window.location.href
       }
     } finally {
       setLoading(false)
@@ -110,14 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("🔑 Login function called, setting token and redirecting")
     localStorage.setItem("token", token)
     setUser(userData)
-    window.location.href = "/"
+    router.push("/") // SPREMENJENO: router.push namesto window.location.href
   }
 
   const logout = () => {
     console.log("🚪 Logout called")
     localStorage.removeItem("token")
     setUser(null)
-    window.location.href = "/login"
+    router.push("/login") // SPREMENJENO: router.push namesto window.location.href
   }
 
   return (
