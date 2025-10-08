@@ -62,7 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch(`${baseUrl}/api/auth/verify`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ token }),
       })

@@ -11,8 +11,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Preveri token za zaščitene poti
-  const token = request.cookies.get('token')?.value
+  // Preveri token v cookiju ALI authorization headerju
+  const token = 
+    request.cookies.get('token')?.value || 
+    request.headers.get('authorization')?.replace('Bearer ', '')
 
   // Če ni tokena, preusmeri na login
   if (!token) {
