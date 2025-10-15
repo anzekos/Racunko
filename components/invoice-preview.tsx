@@ -261,11 +261,11 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
             <div>V primeru zamude se zaračunavajo zamudne obresti.</div>
             <div className="mt-4 font-semibold">Hvala za sodelovanje!</div>
-            <strong className="flex justify-end mb-6 ">2KM Consulting d.o.o.</strong>
           </div>
 
           {/* Signature */}
           <div className="flex justify-end">
+            <strong className="podpis">2KM Consulting d.o.o.</strong>
             <div className="relative w-32 h-20">
               <Image 
                 src="/images/signature-logo.png" 
