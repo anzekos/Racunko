@@ -39,14 +39,14 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   tempContainer.style.backgroundColor = 'white'
   tempContainer.style.fontFamily = 'Arial, sans-serif'
   tempContainer.style.color = '#000000'
-  tempContainer.style.fontSize = '11px' // Zmanjšan glavni font
+  tempContainer.style.fontSize = '12pt' // POVEČANO na 12pt
 
-  // HTML vsebina z MANJŠIMI fonti in STISNJENO tabelo
+  // HTML vsebina z PRAVILNIMI fonti
   tempContainer.innerHTML = `
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 11px;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12pt;">
       <!-- Header with Logo -->
       <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-        <div style="width: 100px; height: 60px;"> <!-- Manjša slika -->
+        <div style="width: 120px; height: 70px;"> <!-- POVEČANA slika -->
           <img src="/images/2km-logo.png" alt="2KM Consulting Logo" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
         </div>
       </div>
@@ -54,49 +54,49 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
       <hr style="border: none; border-top: 1px solid #934435; margin: 0 0 16px 0;" />
 
       <!-- Customer and Company Info -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 24px; font-size: 11px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 24px; font-size: 12pt;">
         <!-- Customer Info -->
         <div style="flex: 1; margin-right: 24px;">
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #000000;">${invoice.customer.Stranka}</div>
-          <div style="margin-bottom: 3px; color: #000000;">${invoice.customer.Naslov}</div>
-          <div style="margin-bottom: 3px; color: #000000;">${invoice.customer.Kraj_postna_st}</div>
-          <div style="margin-bottom: 3px; color: #000000;">${invoice.customer.email}</div>
-          <div style="margin-top: 3px; margin-bottom: 3px; color: #000000;">
+          <div style="font-weight: bold; font-size: 16pt; margin-bottom: 8px; color: #000000;">${invoice.customer.Stranka}</div>
+          <div style="margin-bottom: 4px; color: #000000;">${invoice.customer.Naslov}</div>
+          <div style="margin-bottom: 4px; color: #000000;">${invoice.customer.Kraj_postna_st}</div>
+          <div style="margin-bottom: 4px; color: #000000;">${invoice.customer.email}</div>
+          <div style="margin-top: 8px; margin-bottom: 4px; color: #000000;">
             <strong>ID za DDV:</strong> ${invoice.customer.ID_DDV}
           </div>
 
-          <div style="margin-top: 18px;">
-            <div style="margin-bottom: 3px; color: #000000;">
+          <div style="margin-top: 20px;">
+            <div style="margin-bottom: 4px; color: #000000;">
               <strong>Ljubljana:</strong> ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
             </div>
-            <div style="margin-bottom: 3px; color: #000000;">
+            <div style="margin-bottom: 4px; color: #000000;">
               <strong>Valuta:</strong> ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
             </div>
-            <div style="margin-bottom: 3px; color: #000000;">
+            <div style="margin-bottom: 4px; color: #000000;">
               <strong>Datum opr. storitve:</strong> ${new Date(invoice.serviceDate).toLocaleDateString("sl-SI")}
             </div>
           </div>
         </div>
 
         <!-- Company Info -->
-        <div style="text-align: right; font-size: 8px; flex: 1;"> <!-- Manjši font -->
-          <div style="font-weight: bold; margin-bottom: 3px; color: #000000;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
-          <div style="margin-bottom: 3px; color: #000000;">Športna ulica 22, 1000 Ljubljana</div>
-          <div style="margin-bottom: 3px; color: #000000;">MŠ: 6315992000</div>
-          <div style="margin-bottom: 3px; color: #000000;">ID. št. za DDV: SI 10628169</div>
-          <div style="margin-bottom: 3px; color: #000000;">Osnovni kapital: 7.500,00 EUR</div>
-          <div style="margin-bottom: 3px; color: #000000;">Datum vpisa v SR: 13.2.2013, Okrožno sodišče Koper</div>
-          <div style="margin-top: 6px; margin-bottom: 3px; color: #000000;">Poslovni račun št:</div>
-          <div style="margin-bottom: 3px; color: #000000;">IBAN: SI56 0223 6026 1489 640</div>
-          <div style="margin-bottom: 3px; color: #000000;">Nova Ljubljanska banka d.d., Ljubljana</div>
-          <div style="margin-bottom: 3px; color: #000000;">Trg republike 2, 1520 Ljubljana</div>
-          <div style="margin-bottom: 3px; color: #000000;">SWIFT: LJBASI2X</div>
+        <div style="text-align: right; font-size: 10pt; flex: 1;"> <!-- POVEČAN font -->
+          <div style="font-weight: bold; margin-bottom: 4px; color: #000000;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
+          <div style="margin-bottom: 4px; color: #000000;">Športna ulica 22, 1000 Ljubljana</div>
+          <div style="margin-bottom: 4px; color: #000000;">MŠ: 6315992000</div>
+          <div style="margin-bottom: 4px; color: #000000;">ID. št. za DDV: SI 10628169</div>
+          <div style="margin-bottom: 4px; color: #000000;">Osnovni kapital: 7.500,00 EUR</div>
+          <div style="margin-bottom: 4px; color: #000000;">Datum vpisa v SR: 13.2.2013, Okrožno sodišče Koper</div>
+          <div style="margin-top: 8px; margin-bottom: 4px; color: #000000;">Poslovni račun št:</div>
+          <div style="margin-bottom: 4px; color: #000000;">IBAN: SI56 0223 6026 1489 640</div>
+          <div style="margin-bottom: 4px; color: #000000;">Nova Ljubljanska banka d.d., Ljubljana</div>
+          <div style="margin-bottom: 4px; color: #000000;">Trg republike 2, 1520 Ljubljana</div>
+          <div style="margin-bottom: 4px; color: #000000;">SWIFT: LJBASI2X</div>
         </div>
       </div>
 
-      <!-- Invoice Number -->
+      <!-- Invoice Number - POVEČANO -->
       <div style="margin-bottom: 16px;">
-        <div style="font-size: 18px; font-weight: bold; color: #000000;">
+        <div style="font-size: 20pt; font-weight: bold; color: #000000;">
           <strong>Račun:</strong> ${invoice.invoiceNumber}
         </div>
       </div>
@@ -108,22 +108,22 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           ? `
           <!-- Service Description -->
           <div style="margin-bottom: 16px;">
-            <h4 style="font-weight: bold; margin-bottom: 6px; font-size: 12px; color: #000000; margin-top: 0;">Opis storitve:</h4>
-            <div style="white-space: pre-wrap; line-height: 1.3; color: #000000; font-size: 11px;">${invoice.serviceDescription}</div>
+            <h4 style="font-weight: bold; margin-bottom: 8px; font-size: 14pt; color: #000000; margin-top: 0;">Opis storitve:</h4>
+            <div style="white-space: pre-wrap; line-height: 1.4; color: #000000; font-size: 12pt;">${invoice.serviceDescription}</div>
           </div>
         `
           : ""
       }
 
-      <!-- Invoice Items Table - STISNJENA -->
+      <!-- Invoice Items Table - POVEČANA pisava -->
       <div style="margin-bottom: 24px;">
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #cccccc; font-size: 10px;">
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #cccccc; font-size: 11pt;">
           <thead>
             <tr style="background-color: #f8ecec;">
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Postavka</th>
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Količina</th>
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Cena (EUR)</th>
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 8px; text-align: left; font-weight: bold; color: #000000;">Postavka</th>
+              <th style="border: 1px solid #cccccc; padding: 8px; text-align: left; font-weight: bold; color: #000000;">Količina</th>
+              <th style="border: 1px solid #cccccc; padding: 8px; text-align: left; font-weight: bold; color: #000000;">Cena (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 8px; text-align: left; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
             </tr>
           </thead>
           <tbody>
@@ -131,66 +131,66 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
               .map(
                 (item) => `
               <tr>
-                <td style="border: 1px solid #cccccc; padding: 6px; color: #000000;">${item.description}</td>
-                <td style="border: 1px solid #cccccc; padding: 6px; color: #000000;">${item.quantity}</td>
-                <td style="border: 1px solid #cccccc; padding: 6px; color: #000000;">${item.price.toFixed(2)}</td>
-                <td style="border: 1px solid #cccccc; padding: 6px; color: #000000;">${item.total.toFixed(2)}</td>
+                <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${item.description}</td>
+                <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${item.quantity}</td>
+                <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${item.price.toFixed(2)}</td>
+                <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${item.total.toFixed(2)}</td>
               </tr>
             `,
               )
               .join("")}
           </tbody>
           <tfoot>
-            <tr>
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">
+            <tr style="font-weight: bold;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 8px; text-align: left; color: #000000;">
                 Skupaj brez DDV:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
             </tr>
-            <tr>
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">
+            <tr style="font-weight: bold;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 8px; text-align: left; color: #000000;">
                 DDV (22%):
               </td>
-              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.vat.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${invoice.vat.toFixed(2)}</td>
             </tr>
-            <tr>
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">
+            <tr style="font-weight: bold;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 8px; text-align: left; color: #000000;">
                 Skupaj za plačilo:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 8px; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
       </div>
 
       <!-- Payment Info -->
-      <div style="margin-bottom: 24px; font-size: 11px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #000000;">
+      <div style="margin-bottom: 24px; font-size: 12pt;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #000000;">
           <span>Znesek nakažite na TRR:</span>
           <strong>SI56 0223 6026 1489 640</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #000000;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #000000;">
           <span>Pri plačilu se sklicujte na št. računa:</span>
           <strong>${invoice.invoiceNumber}</strong>
         </div>
-        <div style="margin-bottom: 6px; color: #000000;">V primeru zamude se zaračunavajo zamudne obresti.</div>
-        <div style="margin-top: 12px; font-weight: bold; color: #000000;">Hvala za sodelovanje!</div>
+        <div style="margin-bottom: 8px; color: #000000;">V primeru zamude se zaračunavajo zamudne obresti.</div>
+        <div style="margin-top: 16px; font-weight: bold; color: #000000;">Hvala za sodelovanje!</div>
       </div>
 
       <!-- Signature -->
-      <div style="display: flex; justify-content: center; margin-bottom: 16px;">
-        <div style="width: 200px; height: 100px;"> <!-- Manjši podpis -->
+      <div style="display: flex; justify-content: flex-start; margin-bottom: 16px;">
+        <div style="width: 150px; height: 80px;"> <!-- POVEČAN podpis -->
           <img src="/images/signature-logo.png" alt="Signature" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
         </div>
       </div>
 
       <!-- Footer -->
       <hr style="border: none; border-top: 1px solid #934435; margin: 0 0 12px 0;" />
-      <div style="text-align: right; font-size: 8px; color: #934435;">
-        <div style="font-weight: bold; margin-bottom: 3px;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
-        <div style="margin-bottom: 3px;">Športna ulica 22, 1000 Ljubljana</div>
-        <div style="margin-bottom: 3px;">DŠ: SI 10628169</div>
-        <div style="margin-bottom: 3px;">TRR: SI56 0223 6026 1489 640 (NLB) TESTTTTT</div>
+      <div style="text-align: right; font-size: 9pt; color: #934435;">
+        <div style="font-weight: bold; margin-bottom: 4px;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
+        <div style="margin-bottom: 4px;">Športna ulica 22, 1000 Ljubljana</div>
+        <div style="margin-bottom: 4px;">DŠ: SI 10628169</div>
+        <div style="margin-bottom: 4px;">TRR: SI56 0223 6026 1489 640 (NLB)</div>
       </div>
     </div>
   `
@@ -269,7 +269,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   }
 }
 
-// Popravljena funkcija za generiranje iz elementa - tudi tukaj zmanjšamo font
+// POPRAVLJENA funkcija za generiranje iz elementa - upošteva naše CSS razrede
 export async function generateInvoicePDFFromElement(elementId: string): Promise<Blob> {
   const element = document.getElementById(elementId)
   if (!element) {
@@ -277,12 +277,16 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
   }
 
   try {
+    // Skrij action buttons
     const actionButtons = document.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = 'none'
     })
 
+    // Ustvari kopijo elementa z vsemi stil
     const clonedElement = element.cloneNode(true) as HTMLElement
+    
+    // Ustvari temp container z pravilnimi nastavitvami
     const tempDiv = document.createElement('div')
     tempDiv.style.position = 'fixed'
     tempDiv.style.top = '-9999px'
@@ -290,52 +294,117 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
     tempDiv.style.width = '210mm'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '11px' // Zmanjšan font tudi tukaj
+    tempDiv.style.fontSize = '12pt' // POVEČAN font
+    
+    // Dodaj klonirani element
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
-    // Dodatno zmanjšamo font v kloniranem elementu
+    // Čakaj malo da se stili aplicirajo
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // FORSIRAJ velikosti fontov glede na CSS razrede
     const allElements = tempDiv.querySelectorAll('*')
     allElements.forEach(el => {
       const element = el as HTMLElement
       normalizeColors(element)
       
-      // Zmanjšamo font-size za vse elemente
-      const computedStyle = window.getComputedStyle(element)
-      const currentFontSize = computedStyle.fontSize
-      
-      // Če je font-size večji od 12px, ga zmanjšamo
-      if (parseInt(currentFontSize) > 12) {
-        element.style.fontSize = '11px'
+      // Forsiraj velikosti fontov glede na razrede
+      if (element.classList.contains('invoice-title')) {
+        element.style.fontSize = '20pt'
+        element.style.fontWeight = 'bold'
+      }
+      if (element.classList.contains('invoice-customer-name')) {
+        element.style.fontSize = '14pt'
+        element.style.fontWeight = 'bold'
+      }
+      if (element.classList.contains('invoice-company-info')) {
+        element.style.fontSize = '9pt'
+      }
+      if (element.classList.contains('invoice-section-title')) {
+        element.style.fontSize = '12pt'
+        element.style.fontWeight = 'bold'
+      }
+      if (element.classList.contains('invoice-table')) {
+        element.style.fontSize = '10pt'
+      }
+      if (element.classList.contains('invoice-table-header')) {
+        element.style.fontSize = '10pt'
+        element.style.fontWeight = 'bold'
+      }
+      if (element.classList.contains('invoice-total')) {
+        element.style.fontSize = '11pt'
+        element.style.fontWeight = 'bold'
+      }
+      if (element.classList.contains('invoice-footer')) {
+        element.style.fontSize = '8pt'
+      }
+      if (element.classList.contains('invoice-payment-info')) {
+        element.style.fontSize = '11pt'
       }
       
-      // Zmanjšamo padding v tabelah
+      // Poskrbi za table celice
       if (element.tagName === 'TD' || element.tagName === 'TH') {
-        element.style.padding = '4px 6px'
+        element.style.padding = '6px 8px'
       }
     })
 
     const canvas = await html2canvas(tempDiv, {
-      scale: 2,
+      scale: 3, // POVEČAN scale za boljšo kakovost
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
       onclone: (clonedDoc) => {
+        // Na klonirani dokument apliciraj iste stile
         const clonedElements = clonedDoc.querySelectorAll('*')
         clonedElements.forEach(el => {
           const element = el as HTMLElement
           normalizeColors(element)
-          element.style.fontSize = '11px'
+          
+          if (element.classList.contains('invoice-title')) {
+            element.style.fontSize = '20pt'
+            element.style.fontWeight = 'bold'
+          }
+          if (element.classList.contains('invoice-customer-name')) {
+            element.style.fontSize = '14pt'
+            element.style.fontWeight = 'bold'
+          }
+          if (element.classList.contains('invoice-company-info')) {
+            element.style.fontSize = '9pt'
+          }
+          if (element.classList.contains('invoice-section-title')) {
+            element.style.fontSize = '12pt'
+            element.style.fontWeight = 'bold'
+          }
+          if (element.classList.contains('invoice-table')) {
+            element.style.fontSize = '10pt'
+          }
+          if (element.classList.contains('invoice-table-header')) {
+            element.style.fontSize = '10pt'
+            element.style.fontWeight = 'bold'
+          }
+          if (element.classList.contains('invoice-total')) {
+            element.style.fontSize = '11pt'
+            element.style.fontWeight = 'bold'
+          }
+          if (element.classList.contains('invoice-footer')) {
+            element.style.fontSize = '8pt'
+          }
+          if (element.classList.contains('invoice-payment-info')) {
+            element.style.fontSize = '11pt'
+          }
           
           if (element.tagName === 'TD' || element.tagName === 'TH') {
-            element.style.padding = '4px 6px'
+            element.style.padding = '6px 8px'
           }
         })
       }
     })
 
     document.body.removeChild(tempDiv)
+    
+    // Pokaži action buttons nazaj
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = ''
     })
@@ -392,7 +461,7 @@ export function downloadInvoicePDF(invoice: Invoice) {
     })
 }
 
-export function downloadInvoicePDFFromPreview(invoice: Invoice, previewElementId: string = 'invoice-preview') {
+export function downloadInvoicePDFFromPreview(invoice: Invoice, previewElementId: string = 'invoice-preview-content') {
   const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
 
   generateInvoicePDFFromElement(previewElementId)
