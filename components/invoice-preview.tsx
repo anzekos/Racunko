@@ -174,18 +174,18 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           <div className="space-y-2 mb-8">
             <div className="flex justify-between">
               <span>Znesek nakažite na TRR:</span>
-              <strong>SI56 0223 6026 1489 640</strong>
+              <strong className="pr-8">SI56 0223 6026 1489 640</strong>
             </div>
             <div className="flex justify-between">
               <span>Pri plačilu se sklicujte na št. računa:</span>
-              <strong>{invoice.invoiceNumber}</strong>
+              <strong className="pr-8">{invoice.invoiceNumber}</strong>
             </div>
             <div>V primeru zamude se zaračunavajo zamudne obresti.</div>
             <div className="mt-4 font-semibold">Hvala za sodelovanje!</div>
           </div>
 
           {/* Signature */}
-          <div className="flex justify-right mb-6">
+          <div className="flex justify-left mb-6">
             <div className="relative w-32 h-20">
               <Image 
                 src="/images/signature-logo.png" 
