@@ -57,7 +57,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   tempContainer.style.top = '-9999px'
   tempContainer.style.left = '-9999px'
   tempContainer.style.width = '210mm'
-  tempContainer.style.padding = '5mm 0 0 0'
+  tempContainer.style.padding = '3mm 0 0 0'
   tempContainer.style.margin = '0'
   tempContainer.style.backgroundColor = 'white'
   tempContainer.style.fontFamily = 'Arial, sans-serif'
@@ -144,10 +144,10 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         <table style="width: 100%; border-collapse: collapse; border: 1px solid #cccccc; font-size: 9pt;">
           <thead>
             <tr style="background-color: #f8ecec;">
-              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Postavka</th>
-              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Količina</th>
-              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Cena (EUR)</th>
-              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 2px; text-align: left; font-weight: bold; color: #000000;">Postavka</th>
+              <th style="border: 1px solid #cccccc; padding: 2px; text-align: left; font-weight: bold; color: #000000;">Količina</th>
+              <th style="border: 1px solid #cccccc; padding: 2px; text-align: left; font-weight: bold; color: #000000;">Cena (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 2px; text-align: left; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
             </tr>
           </thead>
           <tbody>
@@ -155,10 +155,10 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
               .map(
                 (item) => `
               <tr>
-                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.description}</td>
-                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.quantity}</td>
-                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.price.toFixed(2)}</td>
-                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.total.toFixed(2)}</td>
+                <td style="border: 1px solid #cccccc; padding: 2px; color: #000000; line-height: 1.2;">${item.description}</td>
+                <td style="border: 1px solid #cccccc; padding: 2px; color: #000000; line-height: 1.2;">${item.quantity}</td>
+                <td style="border: 1px solid #cccccc; padding: 2px; color: #000000; line-height: 1.2;">${item.price.toFixed(2)}</td>
+                <td style="border: 1px solid #cccccc; padding: 2px; color: #000000; line-height: 1.2;">${item.total.toFixed(2)}</td>
               </tr>
             `,
               )
@@ -166,22 +166,22 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           </tbody>
           <tfoot>
             <tr style="font-weight: bold;">
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 3px; text-align: left; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 2px; text-align: left; color: #000000;">
                 Skupaj brez DDV:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 3px; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 2px; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
             </tr>
             <tr style="font-weight: bold;">
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 3px; text-align: left; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 2px; text-align: left; color: #000000;">
                 DDV (22%):
               </td>
-              <td style="border: 1px solid #cccccc; padding: 3px; color: #000000;">${invoice.vat.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 2px; color: #000000;">${invoice.vat.toFixed(2)}</td>
             </tr>
             <tr style="font-weight: bold;">
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 3px; text-align: left; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 2px; text-align: left; color: #000000;">
                 Skupaj za plačilo:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 3px; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 2px; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
