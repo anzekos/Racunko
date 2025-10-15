@@ -157,14 +157,14 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                 <strong>ID za DDV:</strong> {invoice.customer.ID_DDV}
               </div>
 
-              <div className="mt-6 space-y-1">
-                <div>
+              <div className="mt-6 space-y-0">
+                <div className="py-0.1">
                   <strong>Ljubljana:</strong> {new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
                 </div>
-                <div>
+                <div className="py-0.1">
                   <strong>Valuta:</strong> {new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
                 </div>
-                <div>
+                <div className="py-0.1">
                   <strong>Datum opr. storitve:</strong> {new Date(invoice.serviceDate).toLocaleDateString("sl-SI")}
                 </div>
               </div>
