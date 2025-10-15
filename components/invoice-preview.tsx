@@ -264,9 +264,9 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           </div>
 
           {/* Signature */}
-          <div className="flex justify-end">
-            <strong className="podpis">2KM Consulting d.o.o.</strong>
-            <div className="relative w-32 h-20">
+          <div className="flex flex-col items-end gap-0">
+            <strong className="podpis text-sm mb-0.5">2KM Consulting d.o.o.</strong>
+            <div className="relative w-30 h-16">
               <Image 
                 src="/images/signature-logo.png" 
                 alt="Signature" 
