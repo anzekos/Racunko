@@ -51,7 +51,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
         <CardContent id="invoice-preview-content" className="p-8 print:p-0">
           {/* Header with Logo */}
           <div className="flex justify-end mb-6">
-            <div className="relative w-32 h-20">
+            <div className="relative w-30 h-30">
               <Image 
                 src="/images/2km-logo.png" 
                 alt="2KM Consulting Logo" 
@@ -66,7 +66,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
           </div>
 
-          <hr className="border-[#934435] border-2 mb-6" />
+          <hr className="border-[#934435] border-1 mb-6" />
 
           {/* Customer and Company Info */}
           <div className="grid grid-cols-2 gap-8 mb-8">
@@ -94,7 +94,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
 
             {/* Company Info */}
-            <div className="text-right text-sm space-y-1">
+            <div className="text-right text-xm space-y-1">
               <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
               <div>Športna ulica 22, 1000 Ljubljana</div>
               <div>MŠ: 6315992000</div>
@@ -152,19 +152,19 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                   <td colSpan={3} className="border border-gray-300 p-3 text-left font-semibold">
                     Skupaj brez DDV:
                   </td>
-                  <td className="border border-gray-300 p-3 font-semibold">{invoice.totalWithoutVat.toFixed(2)} EUR</td>
+                  <td className="border border-gray-300 p-3 font-semibold">{invoice.totalWithoutVat.toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="border border-gray-300 p-3 text-left font-semibold">
                     DDV (22%):
                   </td>
-                  <td className="border border-gray-300 p-3 font-semibold">{invoice.vat.toFixed(2)} EUR</td>
+                  <td className="border border-gray-300 p-3 font-semibold">{invoice.vat.toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="border border-gray-300 p-3 text-left font-semibold">
                     Skupaj za plačilo:
                   </td>
-                  <td className="border border-gray-300 p-3 font-semibold">{invoice.totalPayable.toFixed(2)} EUR</td>
+                  <td className="border border-gray-300 p-3 font-semibold">{invoice.totalPayable.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -185,8 +185,8 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           </div>
 
           {/* Signature */}
-          <div className="flex justify-center mb-6">
-            <div className="relative w-64 h-32">
+          <div className="flex justify-right mb-6">
+            <div className="relative w-32 h-32">
               <Image 
                 src="/images/signature-logo.png" 
                 alt="Signature" 
@@ -200,7 +200,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           </div>
 
           {/* Footer */}
-          <hr className="border-[#934435] border-2 mb-4" />
+          <hr className="border-[#934435] border-1 mb-4" />
           <div className="text-right text-xs text-[#934435] space-y-1">
             <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
             <div>Športna ulica 22, 1000 Ljubljana</div>
