@@ -51,7 +51,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
       </div>
 
-      <hr style="border: none; border-top: 2px solid #934435; margin: 0 0 16px 0;" />
+      <hr style="border: none; border-top: 1px solid #934435; margin: 0 0 16px 0;" />
 
       <!-- Customer and Company Info -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 24px; font-size: 11px;">
@@ -61,7 +61,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           <div style="margin-bottom: 3px; color: #000000;">${invoice.customer.Naslov}</div>
           <div style="margin-bottom: 3px; color: #000000;">${invoice.customer.Kraj_postna_st}</div>
           <div style="margin-bottom: 3px; color: #000000;">${invoice.customer.email}</div>
-          <div style="margin-top: 12px; margin-bottom: 3px; color: #000000;">
+          <div style="margin-top: 3px; margin-bottom: 3px; color: #000000;">
             <strong>ID za DDV:</strong> ${invoice.customer.ID_DDV}
           </div>
 
@@ -79,7 +79,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
 
         <!-- Company Info -->
-        <div style="text-align: right; font-size: 10px; flex: 1;"> <!-- Manjši font -->
+        <div style="text-align: right; font-size: 8px; flex: 1;"> <!-- Manjši font -->
           <div style="font-weight: bold; margin-bottom: 3px; color: #000000;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
           <div style="margin-bottom: 3px; color: #000000;">Športna ulica 22, 1000 Ljubljana</div>
           <div style="margin-bottom: 3px; color: #000000;">MŠ: 6315992000</div>
@@ -96,7 +96,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
 
       <!-- Invoice Number -->
       <div style="margin-bottom: 16px;">
-        <div style="font-size: 14px; font-weight: bold; color: #000000;">
+        <div style="font-size: 18px; font-weight: bold; color: #000000;">
           <strong>Račun:</strong> ${invoice.invoiceNumber}
         </div>
       </div>
@@ -120,10 +120,10 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         <table style="width: 100%; border-collapse: collapse; border: 1px solid #cccccc; font-size: 10px;">
           <thead>
             <tr style="background-color: #f8ecec;">
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">Postavka</th>
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">Količina</th>
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">Cena (EUR)</th>
-              <th style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Postavka</th>
+              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Količina</th>
+              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Cena (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
             </tr>
           </thead>
           <tbody>
@@ -142,22 +142,22 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">
                 Skupaj brez DDV:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.totalWithoutVat.toFixed(2)} EUR</td>
+              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
             </tr>
             <tr>
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">
                 DDV (22%):
               </td>
-              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.vat.toFixed(2)} EUR</td>
+              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.vat.toFixed(2)}</td>
             </tr>
             <tr>
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: left; font-weight: bold; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 6px; text-align: right; font-weight: bold; color: #000000;">
                 Skupaj za plačilo:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.totalPayable.toFixed(2)} EUR</td>
+              <td style="border: 1px solid #cccccc; padding: 6px; font-weight: bold; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
@@ -185,8 +185,8 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
       </div>
 
       <!-- Footer -->
-      <hr style="border: none; border-top: 2px solid #934435; margin: 0 0 12px 0;" />
-      <div style="text-align: right; font-size: 10px; color: #934435;">
+      <hr style="border: none; border-top: 1px solid #934435; margin: 0 0 12px 0;" />
+      <div style="text-align: right; font-size: 8px; color: #934435;">
         <div style="font-weight: bold; margin-bottom: 3px;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
         <div style="margin-bottom: 3px;">Športna ulica 22, 1000 Ljubljana</div>
         <div style="margin-bottom: 3px;">DŠ: SI 10628169</div>
