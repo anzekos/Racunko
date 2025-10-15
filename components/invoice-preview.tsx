@@ -132,7 +132,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
         <CardContent id="invoice-preview-content" className="p-8 print:p-0 invoice-preview-content">
           {/* Header with Logo */}
           <div className="flex justify-end mb-6">
-            <div className="relative w-30 h-18">
+            <div className="relative w-35 h-18">
               <Image 
                 src="/images/2km-logo.png" 
                 alt="2KM Consulting Logo" 
@@ -267,7 +267,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           {/* Signature */}
           <div className="flex flex-col items-end gap-0">
             <strong className="podpis text-sm mb-0.5">2KM Consulting d.o.o.</strong>
-            <div className="relative w-40 h-26">
+            <div className="relative w-45 h-26">
               <Image 
                 src="/images/signature-logo.png" 
                 alt="Signature" 
