@@ -20,7 +20,6 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
   }
 
   const handleDirectDownload = () => {
-    // Uporabljamo novo funkcijo, ki generira PDF direktno iz preview elementa
     downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
   }
 
@@ -30,6 +29,85 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
   return (
     <div className="space-y-6">
+      {/* CSS stili za print in PDF */}
+      <style jsx>{`
+        @media print {
+          .invoice-preview-content {
+            font-size: 12pt !important;
+            font-family: Arial, sans-serif !important;
+          }
+          .invoice-title {
+            font-size: 20pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-customer-name {
+            font-size: 14pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-company-info {
+            font-size: 9pt !important;
+          }
+          .invoice-section-title {
+            font-size: 12pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-table {
+            font-size: 10pt !important;
+          }
+          .invoice-table-header {
+            font-size: 10pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-total {
+            font-size: 11pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-footer {
+            font-size: 8pt !important;
+          }
+          .invoice-payment-info {
+            font-size: 11pt !important;
+          }
+        }
+        
+        /* Stili za PDF generiranje */
+        .invoice-preview-content {
+          font-family: Arial, sans-serif;
+        }
+        .invoice-title {
+          font-size: 1.5rem;
+          font-weight: bold;
+        }
+        .invoice-customer-name {
+          font-size: 1.125rem;
+          font-weight: bold;
+        }
+        .invoice-company-info {
+          font-size: 0.75rem;
+        }
+        .invoice-section-title {
+          font-size: 0.875rem;
+          font-weight: bold;
+        }
+        .invoice-table {
+          font-size: 0.875rem;
+        }
+        .invoice-table-header {
+          font-size: 0.875rem;
+          font-weight: bold;
+        }
+        .invoice-total {
+          font-size: 0.875rem;
+          font-weight: bold;
+        }
+        .invoice-footer {
+          font-size: 0.7rem;
+        }
+        .invoice-payment-info {
+          font-size: 0.875rem;
+        }
+      `}</style>
+
       {/* Action Buttons */}
       <div className="flex justify-end gap-2 print:hidden">
         <Button variant="outline" onClick={handlePrint} className="gap-2 bg-transparent">
@@ -48,7 +126,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
       {/* Invoice Document */}
       <Card className="max-w-4xl mx-auto">
-        <CardContent id="invoice-preview-content" className="p-8 print:p-0">
+        <CardContent id="invoice-preview-content" className="p-8 print:p-0 invoice-preview-content">
           {/* Header with Logo */}
           <div className="flex justify-end mb-6">
             <div className="relative w-30 h-18">
@@ -59,7 +137,6 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                 className="object-contain"
                 priority
                 onError={(e) => {
-                  // Backup če se slika ne naloži
                   console.warn('Logo se ni naložil:', e)
                 }} 
               />
@@ -72,7 +149,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           <div className="grid grid-cols-2 gap-8 mb-8">
             {/* Customer Info */}
             <div className="space-y-2">
-              <div className="font-semibold text-lg">{invoice.customer.Stranka}</div>
+              <div className="invoice-customer-name">{invoice.customer.Stranka}</div>
               <div>{invoice.customer.Naslov}</div>
               <div>{invoice.customer.Kraj_postna_st}</div>
               <div>{invoice.customer.email}</div>
@@ -94,7 +171,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
 
             {/* Company Info */}
-            <div className="text-right text-xs space-y-1">
+            <div className="text-right invoice-company-info space-y-1">
               <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
               <div>Športna ulica 22, 1000 Ljubljana</div>
               <div>MŠ: 6315992000</div>
@@ -109,9 +186,9 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
           </div>
 
-          {/* Invoice Number */}
+          {/* Invoice Number - POVEČANO */}
           <div className="mb-6">
-            <div className="text-xl font-semibold">
+            <div className="invoice-title">
               <strong>Račun:</strong> {invoice.invoiceNumber}
             </div>
           </div>
@@ -121,20 +198,20 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           {/* Service Description */}
           {invoice.serviceDescription && (
             <div className="mb-6">
-              <h4 className="font-semibold mb-2">Opis storitve:</h4>
+              <h4 className="invoice-section-title mb-2">Opis storitve:</h4>
               <div className="whitespace-pre-wrap">{invoice.serviceDescription}</div>
             </div>
           )}
 
           {/* Invoice Items Table */}
           <div className="mb-8">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-gray-300 invoice-table">
               <thead>
                 <tr className="bg-[#f8ecec]">
-                  <th className="border border-gray-300 p-3 text-left">Postavka</th>
-                  <th className="border border-gray-300 p-3 text-left">Količina</th>
-                  <th className="border border-gray-300 p-3 text-left">Cena (EUR)</th>
-                  <th className="border border-gray-300 p-3 text-left">Skupaj (EUR)</th>
+                  <th className="border border-gray-300 p-3 text-left invoice-table-header">Postavka</th>
+                  <th className="border border-gray-300 p-3 text-left invoice-table-header">Količina</th>
+                  <th className="border border-gray-300 p-3 text-left invoice-table-header">Cena (EUR)</th>
+                  <th className="border border-gray-300 p-3 text-left invoice-table-header">Skupaj (EUR)</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,30 +225,30 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                 ))}
               </tbody>
               <tfoot>
-                <tr>
-                  <td colSpan={3} className="border border-gray-300 p-3 text-left font-semibold">
+                <tr className="invoice-total">
+                  <td colSpan={3} className="border border-gray-300 p-3 text-left">
                     Skupaj brez DDV:
                   </td>
-                  <td className="border border-gray-300 p-3 font-semibold">{invoice.totalWithoutVat.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-3">{invoice.totalWithoutVat.toFixed(2)}</td>
                 </tr>
-                <tr>
-                  <td colSpan={3} className="border border-gray-300 p-3 text-left font-semibold">
+                <tr className="invoice-total">
+                  <td colSpan={3} className="border border-gray-300 p-3 text-left">
                     DDV (22%):
                   </td>
-                  <td className="border border-gray-300 p-3 font-semibold">{invoice.vat.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-3">{invoice.vat.toFixed(2)}</td>
                 </tr>
-                <tr>
-                  <td colSpan={3} className="border border-gray-300 p-3 text-left font-semibold">
+                <tr className="invoice-total">
+                  <td colSpan={3} className="border border-gray-300 p-3 text-left">
                     Skupaj za plačilo:
                   </td>
-                  <td className="border border-gray-300 p-3 font-semibold">{invoice.totalPayable.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-3">{invoice.totalPayable.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
           {/* Payment Info */}
-          <div className="space-y-2 mb-8">
+          <div className="space-y-2 mb-8 invoice-payment-info">
             <div className="flex justify-between">
               <span>Znesek nakažite na TRR:</span>
               <strong className="pr-8">SI56 0223 6026 1489 640</strong>
@@ -201,7 +278,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
           {/* Footer */}
           <hr className="border-[#934435] border-1 mb-4" />
-          <div className="text-right text-xs text-[#934435] space-y-1">
+          <div className="text-right invoice-footer text-[#934435] space-y-1">
             <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
             <div>Športna ulica 22, 1000 Ljubljana</div>
             <div>DŠ: SI 10628169</div>
