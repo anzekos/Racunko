@@ -149,11 +149,11 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           <div className="grid grid-cols-2 gap-8 mb-8">
             {/* Customer Info */}
             <div className="space-y-0 -my-1"> {/* Negativni margin za kompakten videz */}
-              <div className="py-30">{invoice.customer.Stranka}</div>
-              <div className="py-0.5">{invoice.customer.Naslov}</div>
-              <div className="py-0.5">{invoice.customer.Kraj_postna_st}</div>
-              <div className="py-0.5">{invoice.customer.email}</div>
-              <div className="mt-1 py-0.5">
+              <div className="py-0.1">{invoice.customer.Stranka}</div>
+              <div className="py-0.1">{invoice.customer.Naslov}</div>
+              <div className="py-0.1">{invoice.customer.Kraj_postna_st}</div>
+              <div className="py-0.1">{invoice.customer.email}</div>
+              <div className="mt-1 py-0.1">
                 <strong>ID za DDV:</strong> {invoice.customer.ID_DDV}
               </div>
 
