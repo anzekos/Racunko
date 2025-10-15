@@ -35,6 +35,8 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           .invoice-preview-content {
             font-size: 12pt !important;
             font-family: Arial, sans-serif !important;
+            position: relative;
+            min-height: 100vh;
           }
           .invoice-title {
             font-size: 14pt !important;
@@ -71,21 +73,22 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           .podpis{
             font-size: 8pt !important;
           }
-          /* Stili za fiksni footer */
-          .invoice-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+          /* Stili za footer v PDF-ju - POPRAVLJENO */
+          .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 0 20px 20px 20px;
+            background: white;
           }
           .invoice-main-content {
-            flex: 1;
-          }
-          .invoice-footer-section {
-            margin-top: auto;
+            margin-bottom: 80px; /* Prostor za footer */
           }
         }
         
-        /* Stili za PDF generiranje */
+        /* Stili za normalen prikaz */
         .invoice-preview-content {
           font-family: Arial, sans-serif;
         }
@@ -121,6 +124,21 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
         .invoice-payment-info {
           font-size: 0.875rem;
         }
+        
+        /* Skrij footer za normalen prikaz */
+        .pdf-footer {
+          display: none;
+        }
+        
+        /* Prikaži footer samo za print/PDF */
+        @media print {
+          .pdf-footer {
+            display: block;
+          }
+          .normal-footer {
+            display: none;
+          }
+        }
       `}</style>
 
       {/* Action Buttons */}
@@ -141,8 +159,8 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
       {/* Invoice Document */}
       <Card className="max-w-4xl mx-auto">
-        <CardContent id="invoice-preview-content" className="p-8 print:p-0 invoice-preview-content invoice-container">
-          {/* Glavna vsebina - ta se lahko razteza */}
+        <CardContent id="invoice-preview-content" className="p-8 print:p-0 invoice-preview-content">
+          {/* Glavna vsebina */}
           <div className="invoice-main-content">
             {/* Header with Logo */}
             <div className="flex justify-end mb-6">
@@ -295,8 +313,8 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
           </div>
 
-          {/* Footer - VEDNO na dnu */}
-          <div className="invoice-footer-section">
+          {/* Footer za normalen prikaz (skrit v PDF-ju) */}
+          <div className="normal-footer">
             <hr className="border-[#934435] border-1 mb-4" />
             <div className="text-right invoice-footer text-[#934435] space-y-1">
               <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
@@ -307,6 +325,17 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           </div>
         </CardContent>
       </Card>
+
+      {/* Footer za PDF - ta se prikaže samo v PDF-ju na dnu strani */}
+      <div className="pdf-footer">
+        <hr className="border-[#934435] border-1 mb-4" />
+        <div className="text-right invoice-footer text-[#934435] space-y-1">
+          <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
+          <div>Športna ulica 22, 1000 Ljubljana</div>
+          <div>DŠ: SI 10628169</div>
+          <div>TRR: SI56 0223 6026 1489 640 (NLB)</div>
+        </div>
+      </div>
     </div>
   )
 }
