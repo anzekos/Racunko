@@ -190,7 +190,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         <div style="font-weight: bold; margin-bottom: 3px;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
         <div style="margin-bottom: 3px;">Športna ulica 22, 1000 Ljubljana</div>
         <div style="margin-bottom: 3px;">DŠ: SI 10628169</div>
-        <div style="margin-bottom: 3px;">TRR: SI56 0223 6026 1489 640 (NLB)</div>
+        <div style="margin-bottom: 3px;">TRR: SI56 0223 6026 1489 640 (NLB) TESTTTTT</div>
       </div>
     </div>
   `
