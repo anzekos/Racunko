@@ -68,6 +68,8 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           .invoice-payment-info {
             font-size: 11pt !important;
           }
+          .podpis{
+            font-size: 8pt !important;}
         }
         
         /* Stili za PDF generiranje */
@@ -259,11 +261,11 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
             <div>V primeru zamude se zaračunavajo zamudne obresti.</div>
             <div className="mt-4 font-semibold">Hvala za sodelovanje!</div>
-            <strong className="flex justify-end">2KM Consulting d.o.o.</strong>
+            <strong className="flex justify-end mb-6 ">2KM Consulting d.o.o.</strong>
           </div>
 
           {/* Signature */}
-          <div className="flex justify-end mb-6">
+          <div className="flex justify-end">
             <div className="relative w-32 h-20">
               <Image 
                 src="/images/signature-logo.png" 
