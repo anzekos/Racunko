@@ -28,22 +28,48 @@ function normalizeColors(element: HTMLElement) {
   }
 }
 
+// Funkcija za dodajanje footera na dno PDF-ja
+function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
+  const pageWidth = pdf.internal.pageSize.getWidth()
+  const pageHeight = pdf.internal.pageSize.getHeight()
+  
+  // Shranimo trenutno pozicijo
+  const currentY = pdf.getTextDimensions('').height;
+  
+  // Premaknemo se na dno strani (minus 20mm za footer)
+  const footerY = pageHeight - 20;
+  
+  // Dodamo črto
+  pdf.setDrawColor(147, 68, 53); // #934435
+  pdf.line(10, footerY, pageWidth - 10, footerY);
+  
+  // Dodamo footer tekst
+  pdf.setFontSize(8);
+  pdf.setTextColor(147, 68, 53); // #934435
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - 10, footerY + 5, { align: 'right' });
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - 10, footerY + 8, { align: 'right' });
+  pdf.text('DŠ: SI 10628169', pageWidth - 10, footerY + 11, { align: 'right' });
+  pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - 10, footerY + 14, { align: 'right' });
+}
+
 export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   const tempContainer = document.createElement('div')
   tempContainer.style.position = 'fixed'
   tempContainer.style.top = '-9999px'
   tempContainer.style.left = '-9999px'
   tempContainer.style.width = '210mm'
-  tempContainer.style.padding = '8mm 0 0 0' // Optimalen zgornji rob
+  tempContainer.style.padding = '8mm 0 0 0'
   tempContainer.style.margin = '0'
   tempContainer.style.backgroundColor = 'white'
   tempContainer.style.fontFamily = 'Arial, sans-serif'
   tempContainer.style.color = '#000000'
   tempContainer.style.fontSize = '12pt'
-  tempContainer.style.maxHeight = '275mm' // Dovolj prostora
+  tempContainer.style.maxHeight = '270mm' // Pustimo prostor za footer
   tempContainer.style.overflow = 'hidden'
 
-  // HTML vsebina z optimiziranimi razmaki
+  // HTML vsebina BREZ footera (ker ga bomo dodali ročno)
   tempContainer.innerHTML = `
     <div style="max-width: 800px; margin: 0 auto; padding: 10px 20px 20px 20px; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12pt;">
       <!-- Header with Logo -->
@@ -185,15 +211,6 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           <img src="/images/signature-logo.png" alt="Signature" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
         </div>
       </div>
-
-      <!-- Footer -->
-      <hr style="border: none; border-top: 1px solid #934435; margin: 0 0 8px 0;" />
-      <div style="text-align: right; font-size: 8pt; color: #934435; line-height: 1.3;">
-        <div style="font-weight: bold; margin-bottom: 3px;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
-        <div style="margin-bottom: 3px;">Športna ulica 22, 1000 Ljubljana</div>
-        <div style="margin-bottom: 3px;">DŠ: SI 10628169</div>
-        <div style="margin-bottom: 3px;">TRR: SI56 0223 6026 1489 640 (NLB)</div>
-      </div>
     </div>
   `
 
@@ -246,25 +263,28 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // Izračunaj dimenzije slike - začnemo z optimalnim robom
+    // Izračunaj dimenzije slike
     const imgWidth = pdfWidth - 20
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
-    // Optimalen zgornji rob za preglednost
+    // Optimalen zgornji rob
     const topMargin = 8
     
     // Preveri, če se slika prilega na eno stran
-    if (imgHeight > pdfHeight - topMargin - 10) {
+    if (imgHeight > pdfHeight - topMargin - 25) { // 25mm za footer
       // Če ne, zmanjšaj velikost, da se prilega
-      const scale = (pdfHeight - topMargin - 10) / imgHeight
+      const scale = (pdfHeight - topMargin - 25) / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
       
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     } else {
-      // Če se prilega, postavimo na vrh z optimalnim robom
+      // Če se prilega, postavimo na vrh
       pdf.addImage(imgData, 'PNG', 10, topMargin, imgWidth, imgHeight)
     }
+
+    // DODAJ FOOTER NA DNO STRANI
+    addFooterToPDF(pdf, invoice)
 
     document.body.removeChild(tempContainer)
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
@@ -276,8 +296,8 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   }
 }
 
-// Optimizirana funkcija za generiranje iz elementa
-export async function generateInvoicePDFFromElement(elementId: string): Promise<Blob> {
+// Posodobljena funkcija za generiranje iz elementa
+export async function generateInvoicePDFFromElement(elementId: string, invoice: Invoice): Promise<Blob> {
   const element = document.getElementById(elementId)
   if (!element) {
     throw new Error(`Element z ID "${elementId}" ni bil najden`)
@@ -289,18 +309,22 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
       (btn as HTMLElement).style.display = 'none'
     })
 
+    // Odstranimo footer iz klonirane vsebine, ker ga bomo dodali ročno
     const clonedElement = element.cloneNode(true) as HTMLElement
+    const footerElements = clonedElement.querySelectorAll('.invoice-footer, .normal-footer, .pdf-footer')
+    footerElements.forEach(footer => footer.remove())
+    
     const tempDiv = document.createElement('div')
     tempDiv.style.position = 'fixed'
     tempDiv.style.top = '-9999px'
     tempDiv.style.left = '0'
     tempDiv.style.width = '210mm'
-    tempDiv.style.maxHeight = '275mm'
+    tempDiv.style.maxHeight = '270mm'
     tempDiv.style.overflow = 'hidden'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
     tempDiv.style.fontSize = '12pt'
-    tempDiv.style.padding = '8mm 0 0 0' // Optimalen zgornji rob
+    tempDiv.style.padding = '8mm 0 0 0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
@@ -310,38 +334,6 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
     allElements.forEach(el => {
       const element = el as HTMLElement
       normalizeColors(element)
-      
-      // Optimiziraj razmake za boljšo preglednost
-      const computedStyle = window.getComputedStyle(element)
-      
-      // Povečaj razmake za boljšo preglednost, vendar še vedno varčno
-      if (parseInt(computedStyle.marginTop) > 15) {
-        element.style.marginTop = '12px'
-      } else if (parseInt(computedStyle.marginTop) > 8) {
-        element.style.marginTop = '10px'
-      }
-      
-      if (parseInt(computedStyle.marginBottom) > 15) {
-        element.style.marginBottom = '12px'
-      } else if (parseInt(computedStyle.marginBottom) > 8) {
-        element.style.marginBottom = '10px'
-      }
-      
-      if (parseInt(computedStyle.paddingTop) > 10) {
-        element.style.paddingTop = '8px'
-      }
-      
-      if (parseInt(computedStyle.paddingBottom) > 10) {
-        element.style.paddingBottom = '8px'
-      }
-      
-      // Nastavi optimalno višino vrstic
-      element.style.lineHeight = '1.3'
-      
-      // Poskrbi za table celice
-      if (element.tagName === 'TD' || element.tagName === 'TH') {
-        element.style.padding = '6px'
-      }
     })
 
     const canvas = await html2canvas(tempDiv, {
@@ -355,7 +347,6 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
         clonedElements.forEach(el => {
           const element = el as HTMLElement
           normalizeColors(element)
-          element.style.lineHeight = '1.3'
         })
       }
     })
@@ -374,11 +365,10 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
     const imgWidth = pdfWidth - 20
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
-    // Optimalen zgornji rob
     const topMargin = 8
     
-    if (imgHeight > pdfHeight - topMargin - 10) {
-      const scale = (pdfHeight - topMargin - 10) / imgHeight
+    if (imgHeight > pdfHeight - topMargin - 25) {
+      const scale = (pdfHeight - topMargin - 25) / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
       
@@ -386,6 +376,9 @@ export async function generateInvoicePDFFromElement(elementId: string): Promise<
     } else {
       pdf.addImage(imgData, 'PNG', 10, topMargin, imgWidth, imgHeight)
     }
+
+    // DODAJ FOOTER NA DNO STRANI
+    addFooterToPDF(pdf, invoice)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
   } catch (error) {
@@ -420,7 +413,7 @@ export function downloadInvoicePDF(invoice: Invoice) {
 export function downloadInvoicePDFFromPreview(invoice: Invoice, previewElementId: string = 'invoice-preview-content') {
   const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
 
-  generateInvoicePDFFromElement(previewElementId)
+  generateInvoicePDFFromElement(previewElementId, invoice)
     .then((pdfBlob) => {
       const url = URL.createObjectURL(pdfBlob)
       const a = document.createElement("a")
