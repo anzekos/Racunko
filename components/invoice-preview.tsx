@@ -191,7 +191,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
           {/* Invoice Number - popravljeno: enak font kot ostali */}
           <div className="mb-6">
-            <div className="text-lg font-bold">
+            <div className="text-lg">
               <strong>Račun:</strong> {invoice.invoiceNumber}
             </div>
           </div>
