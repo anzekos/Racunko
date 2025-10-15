@@ -51,7 +51,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
         <CardContent id="invoice-preview-content" className="p-8 print:p-0">
           {/* Header with Logo */}
           <div className="flex justify-end mb-6">
-            <div className="relative w-30 h-30">
+            <div className="relative w-30 h-18">
               <Image 
                 src="/images/2km-logo.png" 
                 alt="2KM Consulting Logo" 
@@ -94,7 +94,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
 
             {/* Company Info */}
-            <div className="text-right text-xm space-y-1">
+            <div className="text-right text-xs space-y-1">
               <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
               <div>Športna ulica 22, 1000 Ljubljana</div>
               <div>MŠ: 6315992000</div>
@@ -111,7 +111,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
           {/* Invoice Number */}
           <div className="mb-6">
-            <div className="text-lg font-semibold">
+            <div className="text-xl font-semibold">
               <strong>Račun:</strong> {invoice.invoiceNumber}
             </div>
           </div>
@@ -186,7 +186,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
           {/* Signature */}
           <div className="flex justify-right mb-6">
-            <div className="relative w-32 h-32">
+            <div className="relative w-32 h-20">
               <Image 
                 src="/images/signature-logo.png" 
                 alt="Signature" 
