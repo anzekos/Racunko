@@ -203,7 +203,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           <hr className="border-[#934435] border-1 mb-4" />
           <div className="text-right text-xs text-[#934435] space-y-1">
             <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
-            <div>Športna ulica 22, 1000 Ljubljana DAAA</div>
+            <div>Športna ulica 22, 1000 Ljubljana</div>
             <div>DŠ: SI 10628169</div>
             <div>TRR: SI56 0223 6026 1489 640 (NLB)</div>
           </div>
