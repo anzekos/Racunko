@@ -217,10 +217,10 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
               <tbody>
                 {invoice.items.map((item, index) => (
                   <tr key={index}>
-                    <td className="border border-gray-300 p-3">{item.description}</td>
-                    <td className="border border-gray-300 p-3">{item.quantity}</td>
-                    <td className="border border-gray-300 p-3">{item.price.toFixed(2)}</td>
-                    <td className="border border-gray-300 p-3">{item.total.toFixed(2)}</td>
+                    <td className="border border-gray-300 p-3 text-right">{item.description}</td>
+                    <td className="border border-gray-300 p-3 text-right">{item.quantity}</td>
+                    <td className="border border-gray-300 p-3 text-right">{item.price.toFixed(2)}</td>
+                    <td className="border border-gray-300 p-3 text-right">{item.total.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
