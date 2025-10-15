@@ -217,7 +217,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
               <tbody>
                 {invoice.items.map((item, index) => (
                   <tr key={index}>
-                    <td className="border border-gray-300 p-3 text-right">{item.description}</td>
+                    <td className="border border-gray-300 p-3">{item.description}</td>
                     <td className="border border-gray-300 p-3 text-right">{item.quantity}</td>
                     <td className="border border-gray-300 p-3 text-right">{item.price.toFixed(2)}</td>
                     <td className="border border-gray-300 p-3 text-right">{item.total.toFixed(2)}</td>
@@ -229,19 +229,19 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                   <td colSpan={3} className="border border-gray-300 p-3 text-left">
                     Skupaj brez DDV:
                   </td>
-                  <td className="border border-gray-300 p-3">{invoice.totalWithoutVat.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-3 text-right">{invoice.totalWithoutVat.toFixed(2)}</td>
                 </tr>
                 <tr className="invoice-total">
                   <td colSpan={3} className="border border-gray-300 p-3 text-left">
                     DDV (22%):
                   </td>
-                  <td className="border border-gray-300 p-3">{invoice.vat.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-3 text-right">{invoice.vat.toFixed(2)}</td>
                 </tr>
                 <tr className="invoice-total">
                   <td colSpan={3} className="border border-gray-300 p-3 text-left">
                     Skupaj za plačilo:
                   </td>
-                  <td className="border border-gray-300 p-3">{invoice.totalPayable.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-3 text-right">{invoice.totalPayable.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
