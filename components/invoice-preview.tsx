@@ -37,7 +37,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             font-family: Arial, sans-serif !important;
           }
           .invoice-title {
-            font-size: 15pt !important;
+            font-size: 14pt !important;
             font-weight: bold !important;
           }
           .invoice-customer-name {
@@ -262,7 +262,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           </div>
 
           {/* Signature */}
-          <div className="flex justify-left mb-6">
+          <div className="flex justify-end mb-6">
             <div className="relative w-32 h-20">
               <Image 
                 src="/images/signature-logo.png" 
