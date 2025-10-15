@@ -37,7 +37,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             font-family: Arial, sans-serif !important;
           }
           .invoice-title {
-            font-size: 20pt !important;
+            font-size: 15pt !important;
             font-weight: bold !important;
           }
           .invoice-customer-name {
@@ -148,12 +148,12 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
           {/* Customer and Company Info */}
           <div className="grid grid-cols-2 gap-8 mb-8">
             {/* Customer Info */}
-            <div className="space-y-2">
-              <div className="invoice-customer-name">{invoice.customer.Stranka}</div>
-              <div>{invoice.customer.Naslov}</div>
-              <div>{invoice.customer.Kraj_postna_st}</div>
-              <div>{invoice.customer.email}</div>
-              <div className="mt-4">
+            <div className="space-y-0 -my-1"> {/* Negativni margin za kompakten videz */}
+              <div className="py-0.5">{invoice.customer.Stranka}</div>
+              <div className="py-0.5">{invoice.customer.Naslov}</div>
+              <div className="py-0.5">{invoice.customer.Kraj_postna_st}</div>
+              <div className="py-0.5">{invoice.customer.email}</div>
+              <div className="mt-1 py-0.5">
                 <strong>ID za DDV:</strong> {invoice.customer.ID_DDV}
               </div>
 
