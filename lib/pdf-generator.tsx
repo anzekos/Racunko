@@ -33,22 +33,22 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
-  // Premaknemo se na dno strani (minus 15mm za footer)
-  const footerY = pageHeight - 15;
+  // Premaknemo se na dno strani
+  const footerY = pageHeight - 20;
   
   // Dodamo črto
   pdf.setDrawColor(147, 68, 53); // #934435
   pdf.line(10, footerY, pageWidth - 10, footerY);
   
-  // Dodamo footer tekst
+  // Dodamo footer tekst z večjimi vertikalnimi razmaki
   pdf.setFontSize(8);
   pdf.setTextColor(147, 68, 53); // #934435
   pdf.setFont('helvetica', 'bold');
-  pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - 10, footerY + 5, { align: 'right' });
+  pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - 10, footerY + 6, { align: 'right' });
   pdf.setFont('helvetica', 'normal');
-  pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - 10, footerY + 8, { align: 'right' });
-  pdf.text('DŠ: SI 10628169', pageWidth - 10, footerY + 11, { align: 'right' });
-  pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - 10, footerY + 14, { align: 'right' });
+  pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - 10, footerY + 10, { align: 'right' });
+  pdf.text('DŠ: SI 10628169', pageWidth - 10, footerY + 14, { align: 'right' });
+  pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - 10, footerY + 18, { align: 'right' });
 }
 
 export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
@@ -57,15 +57,15 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   tempContainer.style.top = '-9999px'
   tempContainer.style.left = '-9999px'
   tempContainer.style.width = '210mm'
-  tempContainer.style.padding = '5mm 0 0 0' // Zmanjšan zgornji padding
+  tempContainer.style.padding = '5mm 0 0 0'
   tempContainer.style.margin = '0'
   tempContainer.style.backgroundColor = 'white'
   tempContainer.style.fontFamily = 'Arial, sans-serif'
   tempContainer.style.color = '#000000'
   tempContainer.style.fontSize = '12pt'
-  tempContainer.style.overflow = 'visible' // Omogočimo prikaz vse vsebine
+  tempContainer.style.overflow = 'visible'
 
-  // HTML vsebina BREZ footera (ker ga bomo dodali ročno)
+  // HTML vsebina BREZ footera
   tempContainer.innerHTML = `
     <div style="max-width: 800px; margin: 0 auto; padding: 5px 20px 5px 20px; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12pt;">
       <!-- Header with Logo -->
@@ -103,7 +103,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
 
         <!-- Company Info -->
-        <div style="text-align: right; font-size: 2pt; flex: 1; line-height: 1.2;">
+        <div style="text-align: right; font-size: 9pt; flex: 1; line-height: 1.2;">
           <div style="font-weight: bold; margin-bottom: 1px; color: #000000;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
           <div style="margin-bottom: 1px; color: #000000;">Športna ulica 22, 1000 Ljubljana</div>
           <div style="margin-bottom: 1px; color: #000000;">MŠ: 6315992000</div>
@@ -118,9 +118,9 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
       </div>
 
-      <!-- Invoice Number -->
+      <!-- Invoice Number - popravljeno: enak font kot ostali -->
       <div style="margin-bottom: 8px;">
-        <div style="font-size: 14pt; font-weight: bold; color: #000000;">
+        <div style="font-size: 12pt; font-weight: bold; color: #000000;">
           <strong>Račun:</strong> ${invoice.invoiceNumber}
         </div>
       </div>
@@ -139,15 +139,15 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           : ""
       }
 
-      <!-- Invoice Items Table -->
+      <!-- Invoice Items Table - bolj stisnjena -->
       <div style="margin-bottom: 12px;">
         <table style="width: 100%; border-collapse: collapse; border: 1px solid #cccccc; font-size: 9pt;">
           <thead>
             <tr style="background-color: #f8ecec;">
-              <th style="border: 1px solid #cccccc; padding: 4px; text-align: left; font-weight: bold; color: #000000;">Postavka</th>
-              <th style="border: 1px solid #cccccc; padding: 4px; text-align: left; font-weight: bold; color: #000000;">Količina</th>
-              <th style="border: 1px solid #cccccc; padding: 4px; text-align: left; font-weight: bold; color: #000000;">Cena (EUR)</th>
-              <th style="border: 1px solid #cccccc; padding: 4px; text-align: left; font-weight: bold; color: %232323;">Skupaj (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Postavka</th>
+              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Količina</th>
+              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Cena (EUR)</th>
+              <th style="border: 1px solid #cccccc; padding: 3px; text-align: left; font-weight: bold; color: #000000;">Skupaj (EUR)</th>
             </tr>
           </thead>
           <tbody>
@@ -155,10 +155,10 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
               .map(
                 (item) => `
               <tr>
-                <td style="border: 1px solid #cccccc; padding: 4px; color: #000000; line-height: 1.2;">${item.description}</td>
-                <td style="border: 1px solid #cccccc; padding: 4px; color: #000000; line-height: 1.2;">${item.quantity}</td>
-                <td style="border: 1px solid #cccccc; padding: 4px; color: #000000; line-height: 1.2;">${item.price.toFixed(2)}</td>
-                <td style="border: 1px solid #cccccc; padding: 4px; color: #000000; line-height: 1.2;">${item.total.toFixed(2)}</td>
+                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.description}</td>
+                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.quantity}</td>
+                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.price.toFixed(2)}</td>
+                <td style="border: 1px solid #cccccc; padding: 3px; color: #000000; line-height: 1.2;">${item.total.toFixed(2)}</td>
               </tr>
             `,
               )
@@ -166,22 +166,22 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
           </tbody>
           <tfoot>
             <tr style="font-weight: bold;">
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 4px; text-align: left; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 3px; text-align: left; color: #000000;">
                 Skupaj brez DDV:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 4px; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 3px; color: #000000;">${invoice.totalWithoutVat.toFixed(2)}</td>
             </tr>
             <tr style="font-weight: bold;">
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 4px; text-align: left; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 3px; text-align: left; color: #000000;">
                 DDV (22%):
               </td>
-              <td style="border: 1px solid #cccccc; padding: 4px; color: #000000;">${invoice.vat.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 3px; color: #000000;">${invoice.vat.toFixed(2)}</td>
             </tr>
             <tr style="font-weight: bold;">
-              <td colspan="3" style="border: 1px solid #cccccc; padding: 4px; text-align: left; color: #000000;">
+              <td colspan="3" style="border: 1px solid #cccccc; padding: 3px; text-align: left; color: #000000;">
                 Skupaj za plačilo:
               </td>
-              <td style="border: 1px solid #cccccc; padding: 4px; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
+              <td style="border: 1px solid #cccccc; padding: 3px; color: #000000;">${invoice.totalPayable.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
@@ -263,17 +263,12 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     const imgWidth = pdfWidth - 20
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
-    // Minimalen zgornji rob
     const topMargin = 5
-    
-    // Preverimo, če se celotna vsebina (brez footera) prilega na stran
-    const availableHeight = pdfHeight - topMargin - 15 // 15mm za footer
+    const availableHeight = pdfHeight - topMargin - 25 // 25mm za footer
     
     if (imgHeight <= availableHeight) {
-      // Če se prilega, postavimo na vrh
       pdf.addImage(imgData, 'PNG', 10, topMargin, imgWidth, imgHeight)
     } else {
-      // Če se ne prilega, zmanjšamo velikost samo toliko, da se prilega
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
@@ -321,7 +316,7 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
     tempDiv.style.fontSize = '12pt'
-    tempDiv.style.padding = '5mm 0 0 0' // Minimalen zgornji padding
+    tempDiv.style.padding = '5mm 0 0 0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
@@ -363,7 +358,7 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
     const topMargin = 5
-    const availableHeight = pdfHeight - topMargin - 15
+    const availableHeight = pdfHeight - topMargin - 25
     
     if (imgHeight <= availableHeight) {
       pdf.addImage(imgData, 'PNG', 10, topMargin, imgWidth, imgHeight)
