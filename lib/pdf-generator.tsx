@@ -71,7 +71,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
       <!-- Header with Logo -->
       <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
         <div style="width: 100px; height: 50px;">
-          <img src="/images/2km-logo.png" alt="2KM Consulting Logo" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+          <img src="/images/2km-logo.png" alt="2KM Consulting Logo" style="width: 100%; height: 80%; object-fit: contain; display: block;" />
         </div>
       </div>
 
@@ -203,7 +203,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
 
       <!-- Signature -->
       <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
-        <div style="width: 100px; height: 40px;">
+        <div style="width: 100px; height: 60px;">
           <img src="/images/signature-logo.png" alt="Signature" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
         </div>
       </div>
