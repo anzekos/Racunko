@@ -120,7 +120,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
 
       <!-- Invoice Number - popravljeno: enak font kot ostali -->
       <div style="margin-bottom: 8px;">
-        <div style="font-size: 12pt; font-weight: bold; color: #000000;">
+        <div style="font-size: 12pt; color: #000000;">
           <strong>Račun:</strong> ${invoice.invoiceNumber}
         </div>
       </div>
@@ -203,7 +203,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
 
       <!-- Signature -->
       <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
-        <div style="width: 100px; height: 60px;">
+        <div style="width: 180px; height: 80px;">
           <img src="/images/signature-logo.png" alt="Signature" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
         </div>
       </div>
