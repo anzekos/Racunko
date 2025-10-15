@@ -103,7 +103,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
 
         <!-- Company Info -->
-        <div style="text-align: right; font-size: 8pt; flex: 1; line-height: 1.2;">
+        <div style="text-align: right; font-size: 2pt; flex: 1; line-height: 1.2;">
           <div style="font-weight: bold; margin-bottom: 1px; color: #000000;">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
           <div style="margin-bottom: 1px; color: #000000;">Športna ulica 22, 1000 Ljubljana</div>
           <div style="margin-bottom: 1px; color: #000000;">MŠ: 6315992000</div>
