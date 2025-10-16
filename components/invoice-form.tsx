@@ -1,21 +1,21 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2, Calculator } from "lucide-react"
-import type { Customer, Invoice, InvoiceItem } from "@/lib/database"
+import { Plus, Trash2, Calculator, Loader2 } from "lucide-react"
+import type { Customer, Invoice, InvoiceItem, SavedInvoice } from "@/lib/database"
 
 interface InvoiceFormProps {
   customers: Customer[]
   onInvoiceCreate: (invoice: Invoice) => void
-  existingInvoice?: Invoice | null
   loading: boolean
+  saving?: boolean
+  editingInvoice?: SavedInvoice | null
 }
 
 interface AutocompleteProps {
@@ -81,23 +81,33 @@ function CustomerAutocomplete({ customers, onCustomerSelect, selectedCustomer }:
   )
 }
 
-export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loading }: InvoiceFormProps) {
-  // Inicializiraj stanja z obstoječimi podatki če urejamo
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(existingInvoice?.customer || null)
-  const [invoiceNumber, setInvoiceNumber] = useState(existingInvoice?.invoiceNumber || "")
-  const [issueDate, setIssueDate] = useState(existingInvoice?.issueDate || new Date().toISOString().split("T")[0])
-  const [dueDate, setDueDate] = useState(existingInvoice?.dueDate || "")
-  const [serviceDate, setServiceDate] = useState(existingInvoice?.serviceDate || new Date().toISOString().split("T")[0])
-  const [serviceDescription, setServiceDescription] = useState(existingInvoice?.serviceDescription || "")
-  const [items, setItems] = useState<InvoiceItem[]>(
-    existingInvoice?.items || [{ description: "", quantity: 1, price: 0, total: 0 }]
-  )
+export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editingInvoice }: InvoiceFormProps) {
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [invoiceNumber, setInvoiceNumber] = useState("")
+  const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0])
+  const [dueDate, setDueDate] = useState("")
+  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split("T")[0])
+  const [serviceDescription, setServiceDescription] = useState("")
+  const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, price: 0, total: 0 }])
+
+  // Naloži podatke za urejanje
+  useEffect(() => {
+    if (editingInvoice) {
+      setSelectedCustomer(editingInvoice.customer)
+      setInvoiceNumber(editingInvoice.invoiceNumber)
+      setIssueDate(editingInvoice.issueDate)
+      setDueDate(editingInvoice.dueDate)
+      setServiceDate(editingInvoice.serviceDate)
+      setServiceDescription(editingInvoice.serviceDescription)
+      setItems(editingInvoice.items.length > 0 ? editingInvoice.items : [{ description: "", quantity: 1, price: 0, total: 0 }])
+    }
+  }, [editingInvoice])
 
   useEffect(() => {
     if (issueDate) {
       const issue = new Date(issueDate)
       const due = new Date(issue)
-      due.setDate(due.getDate() + 30) // 30 days payment term
+      due.setDate(due.getDate() + 30)
       setDueDate(due.toISOString().split("T")[0])
     }
   }, [issueDate])
@@ -124,7 +134,7 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
   }
 
   const totalWithoutVat = items.reduce((sum, item) => sum + item.total, 0)
-  const vat = totalWithoutVat * 0.22 // 22% DDV
+  const vat = totalWithoutVat * 0.22
   const totalPayable = totalWithoutVat + vat
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,7 +146,7 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
     }
 
     const invoice: Invoice = {
-      id: existingInvoice?.id || Date.now().toString(), // Uporabi obstoječi ID če urejamo
+      id: editingInvoice?.id,
       invoiceNumber,
       customer: selectedCustomer,
       items: items.filter((item) => item.description.trim() !== ""),
@@ -165,7 +175,6 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Customer Information */}
         <Card>
           <CardHeader>
             <CardTitle>Podatki o stranki</CardTitle>
@@ -199,7 +208,6 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
           </CardContent>
         </Card>
 
-        {/* Invoice Details */}
         <Card>
           <CardHeader>
             <CardTitle>Podatki o računu</CardTitle>
@@ -240,7 +248,6 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
         </Card>
       </div>
 
-      {/* Service Description */}
       <Card>
         <CardHeader>
           <CardTitle>Opis storitve</CardTitle>
@@ -255,7 +262,6 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
         </CardContent>
       </Card>
 
-      {/* Invoice Items */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -317,7 +323,6 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
             ))}
           </div>
 
-          {/* Totals */}
           <div className="mt-6 space-y-2 border-t pt-4">
             <div className="flex justify-between">
               <span>Skupaj brez DDV:</span>
@@ -336,9 +341,18 @@ export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loadi
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit" size="lg" className="gap-2">
-          <Calculator className="h-4 w-4" />
-          Generiraj račun
+        <Button type="submit" size="lg" className="gap-2" disabled={saving}>
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Shranjujem...
+            </>
+          ) : (
+            <>
+              <Calculator className="h-4 w-4" />
+              {editingInvoice ? "Posodobi račun" : "Generiraj račun"}
+            </>
+          )}
         </Button>
       </div>
     </form>
