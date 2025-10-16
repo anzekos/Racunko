@@ -57,7 +57,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   tempContainer.style.top = '-9999px'
   tempContainer.style.left = '-9999px'
   tempContainer.style.width = '210mm'
-  tempContainer.style.padding = '1mm 0 0 0'
+  tempContainer.style.padding = '3mm 0 0 0'
   tempContainer.style.margin = '0'
   tempContainer.style.backgroundColor = 'white'
   tempContainer.style.fontFamily = 'Arial, sans-serif'
