@@ -33,7 +33,7 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
-  // Določimo enako oddaljenost od roba kot pri headerju (10mm)
+  // Footer ostane na istem mestu (10mm od spodnjega roba)
   const margin = 10;
   const footerY = pageHeight - margin;
   
@@ -58,7 +58,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   tempContainer.style.top = '-9999px'
   tempContainer.style.left = '-9999px'
   tempContainer.style.width = '210mm'
-  tempContainer.style.padding = '10mm 0 0 0' // Enaka oddaljenost od zgoraj kot od spodaj
+  tempContainer.style.padding = '2mm 0 0 0' // ZMANJŠANO: od 10mm na 5mm
   tempContainer.style.margin = '0'
   tempContainer.style.backgroundColor = 'white'
   tempContainer.style.fontFamily = 'Arial, sans-serif'
@@ -260,12 +260,12 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // Izračunaj dimenzije slike z enakimi marginami
-    const margin = 10; // Enaka margina za vse strani
+    // Izračunaj dimenzije slike z ZMANJŠANO ZGORNJO MARGINO
+    const margin = 10; // Stranske margine
+    const topMargin = 2; // ZMANJŠANO: od 10mm na 5mm
     const imgWidth = pdfWidth - (2 * margin)
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
-    const topMargin = margin; // Enaka margina od zgoraj
     const availableHeight = pdfHeight - topMargin - margin - 20 // 20mm za footer
     
     if (imgHeight <= availableHeight) {
@@ -278,7 +278,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     }
 
-    // DODAJ FOOTER NA DNO STRANI Z ENAKO ODDALJENOSTJO
+    // DODAJ FOOTER NA DNO STRANI
     addFooterToPDF(pdf, invoice)
 
     document.body.removeChild(tempContainer)
@@ -318,7 +318,7 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
     tempDiv.style.fontSize = '12pt'
-    tempDiv.style.padding = '10mm 0 0 0' // Enaka oddaljenost od zgoraj
+    tempDiv.style.padding = '2mm 0 0 0' // ZMANJŠANO: od 10mm na 5mm
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
@@ -356,12 +356,12 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // Enaka margina za vse strani
+    // Enaka margina za vse strani z ZMANJŠANO ZGORNJO MARGINO
     const margin = 10;
+    const topMargin = 5; // ZMANJŠANO: od 10mm na 5mm
     const imgWidth = pdfWidth - (2 * margin)
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
-    const topMargin = margin; // Enaka margina od zgoraj
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
@@ -374,7 +374,7 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     }
 
-    // DODAJ FOOTER NA DNO STRANI Z ENAKO ODDALJENOSTJO
+    // DODAJ FOOTER NA DNO STRANI
     addFooterToPDF(pdf, invoice)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
