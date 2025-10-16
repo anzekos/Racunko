@@ -14,6 +14,7 @@ import type { Customer, Invoice, InvoiceItem } from "@/lib/database"
 interface InvoiceFormProps {
   customers: Customer[]
   onInvoiceCreate: (invoice: Invoice) => void
+  existingInvoice?: Invoice | null
   loading: boolean
 }
 
@@ -80,14 +81,17 @@ function CustomerAutocomplete({ customers, onCustomerSelect, selectedCustomer }:
   )
 }
 
-export function InvoiceForm({ customers, onInvoiceCreate, loading }: InvoiceFormProps) {
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [invoiceNumber, setInvoiceNumber] = useState("")
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0])
-  const [dueDate, setDueDate] = useState("")
-  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split("T")[0])
-  const [serviceDescription, setServiceDescription] = useState("")
-  const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, price: 0, total: 0 }])
+export function InvoiceForm({ customers, onInvoiceCreate, existingInvoice, loading }: InvoiceFormProps) {
+  // Inicializiraj stanja z obstoječimi podatki če urejamo
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(existingInvoice?.customer || null)
+  const [invoiceNumber, setInvoiceNumber] = useState(existingInvoice?.invoiceNumber || "")
+  const [issueDate, setIssueDate] = useState(existingInvoice?.issueDate || new Date().toISOString().split("T")[0])
+  const [dueDate, setDueDate] = useState(existingInvoice?.dueDate || "")
+  const [serviceDate, setServiceDate] = useState(existingInvoice?.serviceDate || new Date().toISOString().split("T")[0])
+  const [serviceDescription, setServiceDescription] = useState(existingInvoice?.serviceDescription || "")
+  const [items, setItems] = useState<InvoiceItem[]>(
+    existingInvoice?.items || [{ description: "", quantity: 1, price: 0, total: 0 }]
+  )
 
   useEffect(() => {
     if (issueDate) {
@@ -132,7 +136,7 @@ export function InvoiceForm({ customers, onInvoiceCreate, loading }: InvoiceForm
     }
 
     const invoice: Invoice = {
-      id: Date.now().toString(),
+      id: existingInvoice?.id || Date.now().toString(), // Uporabi obstoječi ID če urejamo
       invoiceNumber,
       customer: selectedCustomer,
       items: items.filter((item) => item.description.trim() !== ""),
