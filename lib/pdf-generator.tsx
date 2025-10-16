@@ -38,7 +38,7 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   const footerY = pageHeight - margin;
   
   // Krajša in debelejša črta
-  const lineWidth = 0.5; // Debelina črte v mm (prej je bilo verjetno 0.2-0.5)
+  const lineWidth = 0.4; // Debelina črte v mm (prej je bilo verjetno 0.2-0.5)
   const lineShortening = 10; // Koliko skrajšamo črto na vsaki strani (v mm)
   
   pdf.setDrawColor(147, 68, 53); // #934435
@@ -50,16 +50,19 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   
   pdf.line(lineStartX, footerY - 18, lineEndX, footerY - 18);
   
-  // Dodamo footer tekst
+  const textOffset = 10; // Koliko mm premaknemo tekst v levo
+  
+  // Dodamo footer tekst - premaknjen bolj v levo
   pdf.setFontSize(8);
   pdf.setTextColor(147, 68, 53); // #934435
   pdf.setFont('helvetica', 'bold');
-  pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin, footerY - 14, { align: 'right' });
+  pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin - textOffset, footerY - 14, { align: 'right' });
   pdf.setFont('helvetica', 'normal');
-  pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - margin, footerY - 10, { align: 'right' });
-  pdf.text('DŠ: SI 10628169', pageWidth - margin, footerY - 6, { align: 'right' });
-  pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin, footerY - 2, { align: 'right' });
+  pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - margin - textOffset, footerY - 10, { align: 'right' });
+  pdf.text('DŠ: SI 10628169', pageWidth - margin - textOffset, footerY - 6, { align: 'right' });
+  pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
+
 
 export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
   const tempContainer = document.createElement('div')
