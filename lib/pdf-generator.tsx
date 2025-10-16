@@ -37,9 +37,18 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   const margin = 10;
   const footerY = pageHeight - margin;
   
-  // Dodamo črto
+  // Krajša in debelejša črta
+  const lineWidth = 1; // Debelina črte v mm (prej je bilo verjetno 0.2-0.5)
+  const lineShortening = 30; // Koliko skrajšamo črto na vsaki strani (v mm)
+  
   pdf.setDrawColor(147, 68, 53); // #934435
-  pdf.line(margin, footerY - 50, pageWidth - margin, footerY - 50);
+  pdf.setLineWidth(lineWidth); // Nastavimo debelino črte
+  
+  // Izračunamo začetek in konec črte (skrajšano)
+  const lineStartX = margin + lineShortening;
+  const lineEndX = pageWidth - margin - lineShortening;
+  
+  pdf.line(lineStartX, footerY - 18, lineEndX, footerY - 18);
   
   // Dodamo footer tekst
   pdf.setFontSize(8);
