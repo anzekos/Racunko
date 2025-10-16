@@ -39,7 +39,7 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   
   // Dodamo črto
   pdf.setDrawColor(147, 68, 53); // #934435
-  pdf.line(margin, footerY - 18, pageWidth - margin, footerY - 18);
+  pdf.line(margin, footerY - 50, pageWidth - margin, footerY - 50);
   
   // Dodamo footer tekst
   pdf.setFontSize(8);
@@ -76,7 +76,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
       </div>
 
-      <hr style="border: none; border-top: 1px solid #934435; margin: 0 0 8px 0;" />
+      <hr style="border: none; border-top: 0.5px solid #934435; margin: 0 0 8px 0;" />
 
       <!-- Customer and Company Info -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 11pt;">
