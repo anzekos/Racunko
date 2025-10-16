@@ -1,4 +1,4 @@
-// Database connection utilities
+// lib/database.ts
 import { query } from './db-connection'
 
 export interface Customer {
@@ -88,7 +88,13 @@ export interface Invoice {
   totalPayable: number
 }
 
-// API functions
+export interface SavedInvoice extends Invoice {
+  status: 'draft' | 'sent' | 'paid' | 'cancelled'
+  createdAt: string
+  updatedAt: string
+}
+
+// Customer API functions
 export async function fetchCustomers(): Promise<Customer[]> {
   try {
     const response = await fetch("/api/customers")
@@ -98,29 +104,7 @@ export async function fetchCustomers(): Promise<Customer[]> {
     return await response.json()
   } catch (error) {
     console.error("Error fetching customers:", error)
-    // Return mock data if API fails
-    return [
-      {
-        id: 1,
-        Stranka: "Podjetje ABC d.o.o.",
-        Naslov: "Glavna cesta 123",
-        Kraj_postna_st: "1000 Ljubljana",
-        email: "info@abc.si",
-        ID_DDV: "SI12345678",
-        VLG: 1500.0,
-        Provizija: 150.0,
-      },
-      {
-        id: 2,
-        Stranka: "XYZ Storitve s.p.",
-        Naslov: "Tržaška 45",
-        Kraj_postna_st: "2000 Maribor",
-        email: "kontakt@xyz.si",
-        ID_DDV: "SI87654321",
-        VLG: 2300.0,
-        Provizija: 230.0,
-      },
-    ]
+    return []
   }
 }
 
@@ -166,15 +150,7 @@ export async function updateCustomer(id: number, customer: Customer): Promise<Cu
   }
 }
 
-// database.ts - dodaj te funkcije ZA RACUN
-
-export interface SavedInvoice extends Invoice {
-  id: string;
-  status: 'draft' | 'sent' | 'paid' | 'cancelled';
-  createdAt: string;
-  updatedAt: string;
-}
-
+// Invoice API functions
 export async function saveInvoice(invoice: Invoice): Promise<SavedInvoice> {
   const response = await fetch('/api/invoices', {
     method: 'POST',
@@ -182,33 +158,34 @@ export async function saveInvoice(invoice: Invoice): Promise<SavedInvoice> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(invoice),
-  });
+  })
 
   if (!response.ok) {
-    throw new Error('Napaka pri shranjevanju računa');
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri shranjevanju računa')
   }
 
-  return response.json();
+  return response.json()
 }
 
 export async function fetchInvoices(): Promise<SavedInvoice[]> {
-  const response = await fetch('/api/invoices');
+  const response = await fetch('/api/invoices')
   
   if (!response.ok) {
-    throw new Error('Napaka pri nalaganju računov');
+    throw new Error('Napaka pri nalaganju računov')
   }
 
-  return response.json();
+  return response.json()
 }
 
 export async function fetchInvoiceById(id: string): Promise<SavedInvoice> {
-  const response = await fetch(`/api/invoices/${id}`);
+  const response = await fetch(`/api/invoices/${id}`)
   
   if (!response.ok) {
-    throw new Error('Napaka pri nalaganju računa');
+    throw new Error('Napaka pri nalaganju računa')
   }
 
-  return response.json();
+  return response.json()
 }
 
 export async function updateInvoice(id: string, invoice: Invoice): Promise<SavedInvoice> {
@@ -218,21 +195,22 @@ export async function updateInvoice(id: string, invoice: Invoice): Promise<Saved
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(invoice),
-  });
+  })
 
   if (!response.ok) {
-    throw new Error('Napaka pri posodabljanju računa');
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri posodabljanju računa')
   }
 
-  return response.json();
+  return response.json()
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
   const response = await fetch(`/api/invoices/${id}`, {
     method: 'DELETE',
-  });
+  })
 
   if (!response.ok) {
-    throw new Error('Napaka pri brisanju računa');
+    throw new Error('Napaka pri brisanju računa')
   }
 }
