@@ -165,3 +165,74 @@ export async function updateCustomer(id: number, customer: Customer): Promise<Cu
     throw error
   }
 }
+
+// database.ts - dodaj te funkcije ZA RACUN
+
+export interface SavedInvoice extends Invoice {
+  id: string;
+  status: 'draft' | 'sent' | 'paid' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function saveInvoice(invoice: Invoice): Promise<SavedInvoice> {
+  const response = await fetch('/api/invoices', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(invoice),
+  });
+
+  if (!response.ok) {
+    throw new Error('Napaka pri shranjevanju računa');
+  }
+
+  return response.json();
+}
+
+export async function fetchInvoices(): Promise<SavedInvoice[]> {
+  const response = await fetch('/api/invoices');
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju računov');
+  }
+
+  return response.json();
+}
+
+export async function fetchInvoiceById(id: string): Promise<SavedInvoice> {
+  const response = await fetch(`/api/invoices/${id}`);
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju računa');
+  }
+
+  return response.json();
+}
+
+export async function updateInvoice(id: string, invoice: Invoice): Promise<SavedInvoice> {
+  const response = await fetch(`/api/invoices/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(invoice),
+  });
+
+  if (!response.ok) {
+    throw new Error('Napaka pri posodabljanju računa');
+  }
+
+  return response.json();
+}
+
+export async function deleteInvoice(id: string): Promise<void> {
+  const response = await fetch(`/api/invoices/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    throw new Error('Napaka pri brisanju računa');
+  }
+}
