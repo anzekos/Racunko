@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { InvoiceForm } from "@/components/invoice-form"
 import { InvoicePreview } from "@/components/invoice-preview"
 import { Header } from "@/components/header"
@@ -14,6 +15,7 @@ import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
 export default function InvoicesPage() {
+  const searchParams = useSearchParams()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null)
@@ -26,6 +28,13 @@ export default function InvoicesPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    if (editId) {
+      loadInvoiceForEdit(editId)
+    }
+  }, [searchParams])
 
   const loadData = async () => {
     try {
@@ -40,6 +49,18 @@ export default function InvoicesPage() {
       console.error("Error loading data:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadInvoiceForEdit = async (id: string) => {
+    try {
+      const invoice = await fetchInvoices()
+      const found = invoice.find(inv => inv.id === id)
+      if (found) {
+        setEditingInvoice(found)
+      }
+    } catch (error) {
+      console.error("Error loading invoice for edit:", error)
     }
   }
 
@@ -123,17 +144,19 @@ export default function InvoicesPage() {
                           }
                         </p>
                       </div>
-                      <Card className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <FileText className="h-5 w-5 text-primary" />
+                      <Link href="/invoices/list">
+                        <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                              <FileText className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Aktivni računi</p>
+                              <p className="text-lg font-semibold">{invoiceCount}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Aktivni računi</p>
-                            <p className="text-lg font-semibold">{invoiceCount}</p>
-                          </div>
-                        </div>
-                      </Card>
+                        </Card>
+                      </Link>
                     </div>
 
                     <InvoiceForm 
