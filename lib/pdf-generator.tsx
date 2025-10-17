@@ -1,10 +1,10 @@
-import type { Invoice } from "./database"
+import type { Invoice, SavedInvoice } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
 // Pomožna funkcija za pretvorbo oklch barv v hex/rgb
 function convertOklchToHex(oklchValue: string): string {
-  if (!oklchValue.includes('oklch')) return oklchValue
+  if (!oklchValue.includes('oklch')) return oklchchValue
   if (oklchValue.includes('0.7') && oklchValue.includes('0.05')) return '#934435'
   if (oklchValue.includes('0.95')) return '#f8ecec'
   if (oklchValue.includes('0.87')) return '#cccccc'
@@ -33,28 +33,24 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
-  // Footer ostane na istem mestu (10mm od spodnjega roba)
   const margin = 10;
   const footerY = pageHeight - margin;
   
-  // Krajša in debelejša črta
-  const lineWidth = 0.4; // Debelina črte v mm (prej je bilo verjetno 0.2-0.5)
-  const lineShortening = 10; // Koliko skrajšamo črto na vsaki strani (v mm)
+  const lineWidth = 0.4;
+  const lineShortening = 10;
   
-  pdf.setDrawColor(147, 68, 53); // #934435
-  pdf.setLineWidth(lineWidth); // Nastavimo debelino črte
+  pdf.setDrawColor(147, 68, 53);
+  pdf.setLineWidth(lineWidth);
   
-  // Izračunamo začetek in konec črte (skrajšano)
   const lineStartX = margin + lineShortening;
   const lineEndX = pageWidth - margin - lineShortening;
   
   pdf.line(lineStartX, footerY - 18, lineEndX, footerY - 18);
   
-  const textOffset = 10; // Koliko mm premaknemo tekst v levo
-  
-  // Dodamo footer tekst - premaknjen bolj v levo
+  const textOffset = 10;
+
   pdf.setFontSize(8);
-  pdf.setTextColor(147, 68, 53); // #934435
+  pdf.setTextColor(147, 68, 53);
   pdf.setFont('helvetica', 'bold');
   pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin - textOffset, footerY - 14, { align: 'right' });
   pdf.setFont('helvetica', 'normal');
@@ -63,24 +59,10 @@ function addFooterToPDF(pdf: jsPDF, invoice: Invoice) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
-
-export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
-  const tempContainer = document.createElement('div')
-  tempContainer.style.position = 'fixed'
-  tempContainer.style.top = '-9999px'
-  tempContainer.style.left = '-9999px'
-  tempContainer.style.width = '210mm'
-  tempContainer.style.padding = '2mm 0 0 0' // ZMANJŠANO: od 10mm na 5mm
-  tempContainer.style.margin = '0'
-  tempContainer.style.backgroundColor = 'white'
-  tempContainer.style.fontFamily = 'Arial, sans-serif'
-  tempContainer.style.color = '#000000'
-  tempContainer.style.fontSize = '12pt'
-  tempContainer.style.overflow = 'visible'
-
-  // HTML vsebina BREZ footera
-  tempContainer.innerHTML = `
-    <div style="max-width: 800px; margin: 0 auto; padding: 0 10mm 10mm 10mm; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12pt;">
+// Nova funkcija za generiranje HTML vsebine, ki se uporablja v obeh primerih
+function generateInvoiceHTML(invoice: SavedInvoice): string {
+  return `
+    <div id="invoice-preview-content" style="max-width: 800px; margin: 0 auto; padding: 0 10mm 10mm 10mm; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12pt;">
       <!-- Header with Logo -->
       <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
         <div style="width: 100px; height: 50px;">
@@ -221,7 +203,25 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
         </div>
       </div>
     </div>
-  `
+  `;
+}
+
+export async function generateInvoicePDF(invoice: SavedInvoice): Promise<Blob> {
+  const tempContainer = document.createElement('div')
+  tempContainer.style.position = 'fixed'
+  tempContainer.style.top = '-9999px'
+  tempContainer.style.left = '-9999px'
+  tempContainer.style.width = '210mm'
+  tempContainer.style.padding = '2mm 0 0 0'
+  tempContainer.style.margin = '0'
+  tempContainer.style.backgroundColor = 'white'
+  tempContainer.style.fontFamily = 'Arial, sans-serif'
+  tempContainer.style.color = '#000000'
+  tempContainer.style.fontSize = '12pt'
+  tempContainer.style.overflow = 'visible'
+
+  // Uporabimo isto HTML vsebino kot v generateInvoicePDFFromElement
+  tempContainer.innerHTML = generateInvoiceHTML(invoice)
 
   document.body.appendChild(tempContainer)
 
@@ -272,13 +272,12 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // Izračunaj dimenzije slike z ZMANJŠANO ZGORNJO MARGINO
-    const margin = 10; // Stranske margine
-    const topMargin = 2; // ZMANJŠANO: od 10mm na 5mm
+    const margin = 10;
+    const topMargin = 2;
     const imgWidth = pdfWidth - (2 * margin)
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
-    const availableHeight = pdfHeight - topMargin - margin - 20 // 20mm za footer
+    const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
       pdf.addImage(imgData, 'PNG', margin, topMargin, imgWidth, imgHeight)
@@ -290,7 +289,6 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     }
 
-    // DODAJ FOOTER NA DNO STRANI
     addFooterToPDF(pdf, invoice)
 
     document.body.removeChild(tempContainer)
@@ -304,10 +302,11 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<Blob> {
 }
 
 // Posodobljena funkcija za generiranje iz elementa
-export async function generateInvoicePDFFromElement(elementId: string, invoice: Invoice): Promise<Blob> {
+export async function generateInvoicePDFFromElement(elementId: string, invoice: SavedInvoice): Promise<Blob> {
   const element = document.getElementById(elementId)
   if (!element) {
-    throw new Error(`Element z ID "${elementId}" ni bil najden`)
+    // Če element ne obstaja, uporabimo programsko generiranje
+    return generateInvoicePDF(invoice)
   }
 
   try {
@@ -316,7 +315,6 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
       (btn as HTMLElement).style.display = 'none'
     })
 
-    // Odstranimo footer iz klonirane vsebine, ker ga bomo dodali ročno
     const clonedElement = element.cloneNode(true) as HTMLElement
     const footerElements = clonedElement.querySelectorAll('.invoice-footer, .normal-footer, .pdf-footer')
     footerElements.forEach(footer => footer.remove())
@@ -330,7 +328,7 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
     tempDiv.style.fontSize = '12pt'
-    tempDiv.style.padding = '2mm 0 0 0' // ZMANJŠANO: od 10mm na 5mm
+    tempDiv.style.padding = '2mm 0 0 0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
@@ -368,9 +366,8 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // Enaka margina za vse strani z ZMANJŠANO ZGORNJO MARGINO
     const margin = 10;
-    const topMargin = 5; // ZMANJŠANO: od 10mm na 5mm
+    const topMargin = 5;
     const imgWidth = pdfWidth - (2 * margin)
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     
@@ -386,7 +383,6 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     }
 
-    // DODAJ FOOTER NA DNO STRANI
     addFooterToPDF(pdf, invoice)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
@@ -395,11 +391,12 @@ export async function generateInvoicePDFFromElement(elementId: string, invoice: 
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = ''
     })
-    throw error
+    // V primeru napake pademo nazaj na programsko generiranje
+    return generateInvoicePDF(invoice)
   }
 }
 
-export function downloadInvoicePDF(invoice: Invoice) {
+export function downloadInvoicePDF(invoice: SavedInvoice) {
   const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
 
   generateInvoicePDF(invoice)
@@ -419,7 +416,7 @@ export function downloadInvoicePDF(invoice: Invoice) {
     })
 }
 
-export function downloadInvoicePDFFromPreview(invoice: Invoice, previewElementId: string = 'invoice-preview-content') {
+export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
   const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
 
   generateInvoicePDFFromElement(previewElementId, invoice)
