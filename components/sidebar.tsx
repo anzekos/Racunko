@@ -45,7 +45,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
       <nav className="p-2">
         {menuItems.map((item, index) => (
-          <Link key={index} href={item.href}>
+          <Link key={index} href={item.href} passHref>
             <Button
               variant={item.active ? "secondary" : "ghost"}
               className={cn("w-full justify-start gap-3 mb-1", collapsed && "justify-center px-2")}
