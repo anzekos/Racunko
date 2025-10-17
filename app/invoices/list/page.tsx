@@ -14,7 +14,8 @@ import {
   Trash2, 
   Search,
   Eye,
-  Plus
+  Plus,
+  Copy // DODAJTE TA IMPORT
 } from "lucide-react"
 import { fetchInvoices, deleteInvoice, type SavedInvoice } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
@@ -86,7 +87,7 @@ export default function InvoicesListPage() {
     router.push(`/invoices?edit=${invoiceId}`)
   }
 
-  // In dodajte ustrezno funkcijo:
+  // DODAJTE FUNKCIJO ZA SAVE AS
   const handleSaveAs = (invoiceId: string) => {
     router.push(`/invoices?edit=${invoiceId}&saveAs=true`)
   }
@@ -271,6 +272,16 @@ export default function InvoicesListPage() {
                                   <Edit className="h-4 w-4" />
                                   Uredi
                                 </Button>
+                                {/* DODAJTE GUMB ZA SAVE AS */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSaveAs(invoice.id!)}
+                                  className="gap-2"
+                                  title="Shrani kot nov račun"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -287,17 +298,6 @@ export default function InvoicesListPage() {
                                   className="gap-2"
                                 >
                                   <Mail className="h-4 w-4" />
-                                </Button>
-                                // V app/invoices/list/page.tsx dodajte gumb za Save As v seznamu računov
-                                // V akcijah za vsak račun dodajte:
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleSaveAs(invoice.id!)}
-                                  className="gap-2"
-                                  title="Shrani kot nov račun"
-                                >
-                                  <Copy className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="outline"
