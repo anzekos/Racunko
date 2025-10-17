@@ -1,4 +1,4 @@
-import type { Invoice } from "./database"
+import type { Invoice, SavedInvoice } from "./database"
 
 export interface EmailData {
   to: string
@@ -8,12 +8,37 @@ export interface EmailData {
   attachmentContent?: string
 }
 
+// Dodajte funkcijo za posodobitev statusa računa
+async function updateInvoiceStatus(invoiceId: string, status: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/invoices/${invoiceId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Napaka pri posodabljanju statusa računa')
+    }
+  } catch (error) {
+    console.error('Error updating invoice status:', error)
+    throw error
+  }
+}
+
 export async function sendInvoiceEmail(invoice: Invoice, recipientEmail?: string): Promise<boolean> {
   try {
     const email = recipientEmail || invoice.customer.email
 
     if (!email) {
       throw new Error("E-poštni naslov ni na voljo")
+    }
+
+    // Če je račun tipa SavedInvoice in je v statusu draft, ga posodobimo na sent
+    if ('id' in invoice && invoice.status === 'draft') {
+      await updateInvoiceStatus(invoice.id!, 'sent')
     }
 
     const emailData: EmailData = {
@@ -65,12 +90,23 @@ TRR: SI56 0223 6026 1489 640 (NLB)
   }
 }
 
-export function openEmailClient(invoice: Invoice, recipientEmail?: string) {
+export async function openEmailClient(invoice: Invoice | SavedInvoice, recipientEmail?: string) {
   const email = recipientEmail || invoice.customer.email
 
   if (!email) {
     alert("E-poštni naslov stranke ni na voljo")
     return
+  }
+
+  // Če je račun tipa SavedInvoice in je v statusu draft, ga posodobimo na sent
+  if ('id' in invoice && invoice.status === 'draft') {
+    try {
+      await updateInvoiceStatus(invoice.id!, 'sent')
+      console.log(`Račun ${invoice.invoiceNumber} označen kot poslan`)
+    } catch (error) {
+      console.error('Napaka pri posodabljanju statusa računa:', error)
+      // Nadaljujemo z odpiranjem e-pošte kljub napaki
+    }
   }
 
   const subject = `Račun št. ${invoice.invoiceNumber} - 2KM Consulting`
