@@ -111,6 +111,18 @@ function InvoicesPageContent() {
     setSaveAsMode(true)
   }
 
+  useEffect(() => {
+  const editId = searchParams.get('edit')
+  const saveAsParam = searchParams.get('saveAs')
+  
+  if (editId) {
+    loadInvoiceForEdit(editId)
+    if (saveAsParam === 'true') {
+      setSaveAsMode(true)
+    }
+  }
+}, [searchParams])
+
   const handleBackToForm = () => {
     setShowPreview(false)
     setCurrentInvoice(null)
