@@ -20,7 +20,7 @@ import {
   Circle
 } from "lucide-react"
 import { fetchInvoices, deleteInvoice, updateInvoiceStatus, type SavedInvoice } from "@/lib/database"
-import { downloadInvoicePDF } from "@/lib/pdf-generator"
+import { downloadInvoicePDF, downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -78,7 +78,7 @@ export default function InvoicesListPage() {
   }
 
   const handleDownload = (invoice: SavedInvoice) => {
-    downloadInvoicePDF(invoice)
+    downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
   }
 
   const handleEmail = async (invoice: SavedInvoice) => {
