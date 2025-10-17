@@ -1,3 +1,4 @@
+// app/invoices/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -13,20 +14,9 @@ import { FileText, ArrowLeft } from "lucide-react"
 import { fetchCustomers, fetchInvoices, saveInvoice, updateInvoice, type Customer, type Invoice, type SavedInvoice } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
-
-// app/invoices/page.tsx
 import { Suspense } from "react"
-import InvoicesPageContent from "./invoices-content"
 
-export default function InvoicesPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen">Nalagam...</div>}>
-      <InvoicesPageContent />
-    </Suspense>
-  )
-}
-
-export default function InvoicesPage() {
+function InvoicesPageContent() {
   const searchParams = useSearchParams()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -66,8 +56,8 @@ export default function InvoicesPage() {
 
   const loadInvoiceForEdit = async (id: string) => {
     try {
-      const invoice = await fetchInvoices()
-      const found = invoice.find(inv => inv.id === id)
+      const invoices = await fetchInvoices()
+      const found = invoices.find(inv => inv.id === id)
       if (found) {
         setEditingInvoice(found)
       }
@@ -81,12 +71,10 @@ export default function InvoicesPage() {
       setSaving(true)
       
       if (editingInvoice) {
-        // Posodobi obstoječi račun
         const updated = await updateInvoice(editingInvoice.id!, invoiceData)
         setCurrentInvoice(updated)
         setEditingInvoice(null)
       } else {
-        // Shrani nov račun
         const saved = await saveInvoice(invoiceData)
         setCurrentInvoice(saved)
         setInvoiceCount(prev => prev + 1)
@@ -212,5 +200,13 @@ export default function InvoicesPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Nalagam...</div>}>
+      <InvoicesPageContent />
+    </Suspense>
   )
 }
