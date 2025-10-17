@@ -20,10 +20,11 @@ import {
   Circle
 } from "lucide-react"
 import { fetchInvoices, deleteInvoice, updateInvoiceStatus, type SavedInvoice } from "@/lib/database"
-import { downloadInvoicePDF, downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
+import { downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { InvoicePreview } from "@/components/invoice-preview"
 
 export default function InvoicesListPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -31,6 +32,7 @@ export default function InvoicesListPage() {
   const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [pdfInvoice, setPdfInvoice] = useState<SavedInvoice | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -77,8 +79,19 @@ export default function InvoicesListPage() {
     }
   }
 
-  const handleDownload = (invoice: SavedInvoice) => {
-    downloadInvoicePDF(invoice)
+  const handleDownload = async (invoice: SavedInvoice) => {
+    setPdfInvoice(invoice)
+    // Počakamo, da se komponenta naloži v DOM
+    setTimeout(() => {
+      try {
+        downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
+      } catch (error) {
+        console.error('Napaka pri prenosu PDF-ja:', error)
+        alert('Napaka pri prenosu PDF-ja: ' + error.message)
+      } finally {
+        setPdfInvoice(null)
+      }
+    }, 100)
   }
 
   const handleEmail = async (invoice: SavedInvoice) => {
@@ -377,6 +390,17 @@ export default function InvoicesListPage() {
           </div>
         </main>
       </div>
+
+      {/* Skrita InvoicePreview komponenta za generiranje PDF-jev */}
+      {pdfInvoice && (
+        <div className="fixed -left-[10000px] top-0 opacity-0">
+          <InvoicePreview
+            invoice={pdfInvoice}
+            onDownload={() => {}}
+            onSendEmail={() => {}}
+          />
+        </div>
+      )}
     </div>
   )
 }
