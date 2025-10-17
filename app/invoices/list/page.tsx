@@ -86,6 +86,11 @@ export default function InvoicesListPage() {
     router.push(`/invoices?edit=${invoiceId}`)
   }
 
+  // In dodajte ustrezno funkcijo:
+  const handleSaveAs = (invoiceId: string) => {
+    router.push(`/invoices?edit=${invoiceId}&saveAs=true`)
+  }
+
   const getStatusBadge = (status: string) => {
     const badges = {
       draft: "bg-gray-100 text-gray-800",
@@ -282,6 +287,17 @@ export default function InvoicesListPage() {
                                   className="gap-2"
                                 >
                                   <Mail className="h-4 w-4" />
+                                </Button>
+                                // V app/invoices/list/page.tsx dodajte gumb za Save As v seznamu računov
+                                // V akcijah za vsak račun dodajte:
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSaveAs(invoice.id!)}
+                                  className="gap-2"
+                                  title="Shrani kot nov račun"
+                                >
+                                  <Copy className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="outline"
