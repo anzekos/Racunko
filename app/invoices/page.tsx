@@ -1,4 +1,4 @@
-// app/invoices/page.tsx
+// app/invoices/page.tsx - dodajte te spremembe
 "use client"
 
 import { useState, useEffect } from "react"
@@ -10,7 +10,7 @@ import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { FileText, ArrowLeft } from "lucide-react"
+import { FileText, ArrowLeft, Copy } from "lucide-react"
 import { fetchCustomers, fetchInvoices, saveInvoice, updateInvoice, type Customer, type Invoice, type SavedInvoice } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
@@ -26,6 +26,7 @@ function InvoicesPageContent() {
   const [loading, setLoading] = useState(true)
   const [invoiceCount, setInvoiceCount] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [saveAsMode, setSaveAsMode] = useState(false) // Dodano stanje za Save As način
 
   useEffect(() => {
     loadData()
@@ -60,17 +61,27 @@ function InvoicesPageContent() {
       const found = invoices.find(inv => inv.id === id)
       if (found) {
         setEditingInvoice(found)
+        setSaveAsMode(false) // Reset Save As načina ob nalaganju računa
       }
     } catch (error) {
       console.error("Error loading invoice for edit:", error)
     }
   }
 
-  const handleInvoiceCreate = async (invoiceData: Invoice) => {
+  const handleInvoiceCreate = async (invoiceData: Invoice, isSaveAs: boolean = false) => {
     try {
       setSaving(true)
       
-      if (editingInvoice) {
+      // Če je Save As način ali če shranjujemo kot nov račun
+      if (isSaveAs || saveAsMode) {
+        const saved = await saveInvoice({
+          ...invoiceData,
+          invoiceNumber: generateNewInvoiceNumber() // Generiraj novo številko računa
+        })
+        setCurrentInvoice(saved)
+        setInvoiceCount(prev => prev + 1)
+        setSaveAsMode(false) // Reset Save As načina po uspešnem shranjevanju
+      } else if (editingInvoice) {
         const updated = await updateInvoice(editingInvoice.id!, invoiceData)
         setCurrentInvoice(updated)
         setEditingInvoice(null)
@@ -89,10 +100,22 @@ function InvoicesPageContent() {
     }
   }
 
+  // Funkcija za generiranje nove številke računa
+  const generateNewInvoiceNumber = () => {
+    const timestamp = new Date().getTime()
+    const random = Math.floor(Math.random() * 1000)
+    return `RAC-${timestamp}-${random}`
+  }
+
+  const handleSaveAs = () => {
+    setSaveAsMode(true)
+  }
+
   const handleBackToForm = () => {
     setShowPreview(false)
     setCurrentInvoice(null)
     setEditingInvoice(null)
+    setSaveAsMode(false)
   }
 
   const handleDownloadPDF = () => {
@@ -116,6 +139,7 @@ function InvoicesPageContent() {
     if (currentInvoice) {
       setEditingInvoice(currentInvoice as SavedInvoice)
       setShowPreview(false)
+      setSaveAsMode(false)
     }
   }
 
@@ -135,11 +159,17 @@ function InvoicesPageContent() {
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <h1 className="text-2xl font-semibold text-foreground">
-                          {editingInvoice ? "Urejanje računa" : "Generiranje računov"}
+                          {editingInvoice 
+                            ? (saveAsMode ? "Shrani račun kot nov" : "Urejanje računa") 
+                            : "Generiranje računov"
+                          }
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
                           {editingInvoice 
-                            ? `Urejate račun št. ${editingInvoice.invoiceNumber}`
+                            ? (saveAsMode 
+                                ? `Ustvarjate nov račun na podlagi računa št. ${editingInvoice.invoiceNumber}`
+                                : `Urejate račun št. ${editingInvoice.invoiceNumber}`
+                              )
                             : "Ustvarite profesionalne račune z avtomatskim izračunom DDV"
                           }
                         </p>
@@ -162,9 +192,11 @@ function InvoicesPageContent() {
                     <InvoiceForm 
                       customers={customers} 
                       onInvoiceCreate={handleInvoiceCreate} 
+                      onSaveAs={handleSaveAs}
                       loading={loading}
                       saving={saving}
                       editingInvoice={editingInvoice}
+                      saveAsMode={saveAsMode}
                     />
                   </>
                 ) : (
@@ -180,9 +212,11 @@ function InvoicesPageContent() {
                           <p className="text-sm text-muted-foreground">Račun št. {currentInvoice?.invoiceNumber}</p>
                         </div>
                       </div>
-                      <Button variant="outline" onClick={handleEditInvoice} className="gap-2">
-                        Uredi račun
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleEditInvoice} className="gap-2">
+                          Uredi račun
+                        </Button>
+                      </div>
                     </div>
 
                     {currentInvoice && (
