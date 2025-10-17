@@ -1,12 +1,10 @@
 "use client"
-
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Users, FileText, Home, ChevronLeft, ChevronRight } from "lucide-react"
+import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
 
 interface SidebarProps {
   collapsed: boolean
@@ -15,12 +13,12 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
-
+  
   const menuItems = [
     { icon: Home, label: "Domov", href: "/", active: pathname === "/" },
     { icon: Users, label: "Stranke", href: "/customers", active: pathname === "/customers" },
-    { icon: FileText, label: "Računi", href: "/invoices", active: pathname === "/invoices" },
-    { icon: FileText, label: "Vsi računi", href: "/invoices/list", active: pathname.includes("/invoices/list") },
+    { icon: FileText, label: "Nov račun", href: "/invoices", active: pathname === "/invoices" && !pathname.includes("/list") },
+    { icon: ListChecks, label: "Vsi računi", href: "/invoices/list", active: pathname.includes("/invoices/list") },
   ]
 
   return (
@@ -45,7 +43,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </Button>
         </div>
       </div>
-
       <nav className="p-2">
         {menuItems.map((item, index) => (
           <Link key={index} href={item.href}>
@@ -59,7 +56,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </Link>
         ))}
       </nav>
-
       {!collapsed && (
         <div className="absolute bottom-4 left-4 right-4">
           <div className="text-xs text-muted-foreground text-center space-y-1">
