@@ -154,7 +154,7 @@ function HomePageContent() {
                         <div className="text-sm text-muted-foreground">Stanje sistema</div>
                       </div>
                       <div className="text-center p-4 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold text-chart-4">v1.6</div>
+                        <div className="text-2xl font-bold text-chart-4">v2.0</div>
                         <div className="text-sm text-muted-foreground">Različica</div>
                       </div>
                     </div>
@@ -212,7 +212,7 @@ function HomePageContent() {
                       <Image src="/images/2km-logo.png" alt="2KM Consulting" fill className="object-contain" />
                     </div>
                   </div>
-                  <p>2KM Consulting d.o.o. • Anže Kos • Različica 1.6</p>
+                  <p>2KM Consulting d.o.o. • Anže Kos • Različica 2.0</p>
                   <p className="mt-1">Sistem za upravljanje strank in generiranje računov</p>
                 </div>
               </div>
