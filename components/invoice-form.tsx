@@ -7,16 +7,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2, Calculator, Loader2 } from "lucide-react"
+import { Plus, Trash2, Calculator, Loader2, Copy } from "lucide-react"
 import type { Customer, Invoice, InvoiceItem, SavedInvoice } from "@/lib/database"
 
 interface InvoiceFormProps {
   customers: Customer[]
-  onInvoiceCreate: (invoice: Invoice) => void
+  onInvoiceCreate: (invoice: Invoice, isSaveAs?: boolean) => void
+  onSaveAs?: () => void
   loading: boolean
   saving?: boolean
   editingInvoice?: SavedInvoice | null
-  onSaveAs?: () => void
   saveAsMode?: boolean
 }
 
@@ -83,7 +83,15 @@ function CustomerAutocomplete({ customers, onCustomerSelect, selectedCustomer }:
   )
 }
 
-export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editingInvoice }: InvoiceFormProps) {
+export function InvoiceForm({ 
+  customers, 
+  onInvoiceCreate, 
+  onSaveAs,
+  loading, 
+  saving, 
+  editingInvoice,
+  saveAsMode = false 
+}: InvoiceFormProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [invoiceNumber, setInvoiceNumber] = useState("")
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0])
@@ -102,8 +110,13 @@ export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editi
       setServiceDate(editingInvoice.serviceDate)
       setServiceDescription(editingInvoice.serviceDescription)
       setItems(editingInvoice.items.length > 0 ? editingInvoice.items : [{ description: "", quantity: 1, price: 0, total: 0 }])
+      
+      // Če smo v saveAs načinu, počistimo številko računa
+      if (saveAsMode) {
+        setInvoiceNumber("")
+      }
     }
-  }, [editingInvoice])
+  }, [editingInvoice, saveAsMode])
 
   useEffect(() => {
     if (issueDate) {
@@ -161,7 +174,7 @@ export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editi
       totalPayable,
     }
 
-    onInvoiceCreate(invoice)
+    onInvoiceCreate(invoice, saveAsMode)
   }
 
   if (loading) {
@@ -221,9 +234,14 @@ export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editi
                 id="invoice-number"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="npr. 2024-001"
+                placeholder={saveAsMode ? "Vnesite novo številko računa..." : "npr. 2024-001"}
                 required
               />
+              {saveAsMode && (
+                <p className="text-sm text-muted-foreground">
+                  Vnesite novo številko računa za kopijo
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -342,8 +360,13 @@ export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editi
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button type="submit" size="lg" className="gap-2" disabled={saving}>
+      <div className="flex gap-4 pt-6 border-t">
+        <Button 
+          type="submit"
+          size="lg" 
+          className="gap-2 flex-1" 
+          disabled={saving}
+        >
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -352,10 +375,44 @@ export function InvoiceForm({ customers, onInvoiceCreate, loading, saving, editi
           ) : (
             <>
               <Calculator className="h-4 w-4" />
-              {editingInvoice ? "Posodobi račun" : "Generiraj račun"}
+              {editingInvoice 
+                ? (saveAsMode ? "Shrani kot nov račun" : "Posodobi račun")
+                : "Generiraj račun"
+              }
             </>
           )}
         </Button>
+        
+        {/* Gumb za Save As - prikaže se samo ko urejamo obstoječ račun in nismo v saveAs načinu */}
+        {editingInvoice && !saveAsMode && onSaveAs && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSaveAs}
+            disabled={saving}
+            className="gap-2"
+            size="lg"
+          >
+            <Copy className="h-4 w-4" />
+            Shrani kot nov
+          </Button>
+        )}
+        
+        {/* Gumb za preklic Save As načina */}
+        {saveAsMode && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              // Preusmeri nazaj na normalno urejanje
+              window.location.href = `/invoices?edit=${editingInvoice?.id}`
+            }}
+            disabled={saving}
+            size="lg"
+          >
+            Prekliči
+          </Button>
+        )}
       </div>
     </form>
   )
