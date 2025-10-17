@@ -214,3 +214,23 @@ export async function deleteInvoice(id: string): Promise<void> {
     throw new Error('Napaka pri brisanju računa')
   }
 }
+
+// V lib/database.ts dodajte to funkcijo
+export async function updateInvoiceStatus(invoiceId: string, status: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/invoices/${invoiceId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Napaka pri posodabljanju statusa računa')
+    }
+  } catch (error) {
+    console.error('Error updating invoice status:', error)
+    throw error
+  }
+}
