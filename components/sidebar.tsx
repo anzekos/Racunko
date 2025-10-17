@@ -19,6 +19,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { icon: Home, label: "Domov", href: "/", active: pathname === "/" },
     { icon: Users, label: "Stranke", href: "/customers", active: pathname === "/customers" },
     { icon: FileText, label: "Računi", href: "/invoices", active: pathname === "/invoices" },
+    { icon: FileText, label: "Vsi računi", href: "/invoices/list", active: pathname.includes("/invoices/list") },
   ]
 
   return (
