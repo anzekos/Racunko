@@ -16,6 +16,8 @@ interface InvoiceFormProps {
   loading: boolean
   saving?: boolean
   editingInvoice?: SavedInvoice | null
+  onSaveAs?: () => void
+  saveAsMode?: boolean
 }
 
 interface AutocompleteProps {
