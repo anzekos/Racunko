@@ -1,3 +1,4 @@
+// app/invoices/view/[id]/page.tsx - dodajte gumb za Save As
 "use client"
 
 import { useState, useEffect } from "react"
@@ -6,7 +7,7 @@ import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { InvoicePreview } from "@/components/invoice-preview"
-import { ArrowLeft, Edit } from "lucide-react"
+import { ArrowLeft, Edit, Copy } from "lucide-react"
 import { fetchInvoiceById, type SavedInvoice } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
@@ -18,41 +19,12 @@ export default function InvoiceViewPage() {
   const [invoice, setInvoice] = useState<SavedInvoice | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (params.id) {
-      loadInvoice(params.id as string)
-    }
-  }, [params.id])
+  // ... obstoječe funkcije ...
 
-  const loadInvoice = async (id: string) => {
-    try {
-      setLoading(true)
-      const data = await fetchInvoiceById(id)
-      setInvoice(data)
-    } catch (error) {
-      console.error("Error loading invoice:", error)
-      alert("Napaka pri nalaganju računa")
-      router.push("/invoices/list")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDownloadPDF = () => {
+  const handleSaveAs = () => {
     if (invoice) {
-      downloadInvoicePDF(invoice)
-    }
-  }
-
-  const handleSendEmail = () => {
-    if (invoice) {
-      openEmailClient(invoice)
-    }
-  }
-
-  const handleEdit = () => {
-    if (invoice) {
-      router.push(`/invoices?edit=${invoice.id}`)
+      // Preusmeri na stran za urejanje z novim parametrom za Save As
+      router.push(`/invoices?edit=${invoice.id}&saveAs=true`)
     }
   }
 
@@ -90,10 +62,16 @@ export default function InvoiceViewPage() {
                           </p>
                         </div>
                       </div>
-                      <Button variant="outline" onClick={handleEdit} className="gap-2">
-                        <Edit className="h-4 w-4" />
-                        Uredi račun
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleSaveAs} className="gap-2">
+                          <Copy className="h-4 w-4" />
+                          Shrani kot nov
+                        </Button>
+                        <Button variant="outline" onClick={handleEdit} className="gap-2">
+                          <Edit className="h-4 w-4" />
+                          Uredi račun
+                        </Button>
+                      </div>
                     </div>
 
                     <InvoicePreview
