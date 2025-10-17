@@ -15,9 +15,11 @@ import {
   Search,
   Eye,
   Plus,
-  Copy // DODAJTE TA IMPORT
+  Copy,
+  CheckCircle,
+  Circle
 } from "lucide-react"
-import { fetchInvoices, deleteInvoice, type SavedInvoice } from "@/lib/database"
+import { fetchInvoices, deleteInvoice, updateInvoiceStatus, type SavedInvoice } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
@@ -79,15 +81,37 @@ export default function InvoicesListPage() {
     downloadInvoicePDF(invoice)
   }
 
-  const handleEmail = (invoice: SavedInvoice) => {
-    openEmailClient(invoice)
+  const handleEmail = async (invoice: SavedInvoice) => {
+    try {
+      // Če račun še ni poslan, ga označimo kot poslan
+      if (invoice.status === 'draft') {
+        await updateInvoiceStatus(invoice.id!, 'sent')
+        await loadInvoices() // Osvežimo seznam
+      }
+      
+      openEmailClient(invoice)
+    } catch (error) {
+      console.error("Error sending email:", error)
+      alert("Napaka pri pošiljanju e-pošte")
+    }
+  }
+
+  const handleMarkAsPaid = async (invoiceId: string, invoiceNumber: string) => {
+    if (confirm(`Ali ste prepričani, da želite označiti račun ${invoiceNumber} kot plačan?`)) {
+      try {
+        await updateInvoiceStatus(invoiceId, 'paid')
+        await loadInvoices() // Osvežimo seznam
+      } catch (error) {
+        console.error("Error marking invoice as paid:", error)
+        alert("Napaka pri označevanju računa kot plačan")
+      }
+    }
   }
 
   const handleEdit = (invoiceId: string) => {
     router.push(`/invoices?edit=${invoiceId}`)
   }
 
-  // DODAJTE FUNKCIJO ZA SAVE AS
   const handleSaveAs = (invoiceId: string) => {
     router.push(`/invoices?edit=${invoiceId}&saveAs=true`)
   }
@@ -112,6 +136,19 @@ export default function InvoicesListPage() {
         {labels[status as keyof typeof labels]}
       </span>
     )
+  }
+
+  // Funkcija za pridobivanje CSS razredov glede na status
+  const getInvoiceCardClass = (status: string) => {
+    const baseClass = "border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+    
+    if (status === 'paid') {
+      return `${baseClass} bg-green-50 border-green-200`
+    } else if (status === 'sent') {
+      return `${baseClass} bg-blue-50 border-blue-200`
+    }
+    
+    return baseClass
   }
 
   return (
@@ -189,7 +226,7 @@ export default function InvoicesListPage() {
                             {invoices.filter(i => i.status === 'paid').length}
                           </p>
                         </div>
-                        <FileText className="h-8 w-8 text-green-500 opacity-20" />
+                        <CheckCircle className="h-8 w-8 text-green-500 opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
@@ -227,12 +264,21 @@ export default function InvoicesListPage() {
                         {filteredInvoices.map((invoice) => (
                           <div
                             key={invoice.id}
-                            className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                            className={getInvoiceCardClass(invoice.status)}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="font-semibold text-lg">
+                                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                                    {invoice.status === 'paid' && (
+                                      <CheckCircle className="h-5 w-5 text-green-600" />
+                                    )}
+                                    {invoice.status === 'sent' && (
+                                      <Mail className="h-5 w-5 text-blue-600" />
+                                    )}
+                                    {invoice.status === 'draft' && (
+                                      <Circle className="h-5 w-5 text-gray-400" />
+                                    )}
                                     Račun {invoice.invoiceNumber}
                                   </h3>
                                   {getStatusBadge(invoice.status)}
@@ -272,7 +318,6 @@ export default function InvoicesListPage() {
                                   <Edit className="h-4 w-4" />
                                   Uredi
                                 </Button>
-                                {/* DODAJTE GUMB ZA SAVE AS */}
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -296,9 +341,21 @@ export default function InvoicesListPage() {
                                   size="sm"
                                   onClick={() => handleEmail(invoice)}
                                   className="gap-2"
+                                  title={invoice.status === 'draft' ? "Pošlji e-pošto in označi kot poslan" : "Pošlji e-pošto"}
                                 >
                                   <Mail className="h-4 w-4" />
                                 </Button>
+                                {invoice.status !== 'paid' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleMarkAsPaid(invoice.id!, invoice.invoiceNumber)}
+                                    className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    title="Označi kot plačan"
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"
