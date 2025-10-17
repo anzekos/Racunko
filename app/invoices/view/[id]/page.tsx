@@ -6,8 +6,8 @@ import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { InvoicePreview } from "@/components/invoice-preview"
-import { ArrowLeft, Edit, Copy } from "lucide-react" // DODAJTE Copy V IMPORT
-import { fetchInvoiceById, type SavedInvoice } from "@/lib/database"
+import { ArrowLeft, Edit, Copy, CheckCircle } from "lucide-react"
+import { fetchInvoiceById, type SavedInvoice, updateInvoiceStatus } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
@@ -44,9 +44,16 @@ export default function InvoiceViewPage() {
     }
   }
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (invoice) {
-      openEmailClient(invoice)
+      try {
+        await openEmailClient(invoice)
+        // Osvežimo podatke, da vidimo spremembo statusa
+        await loadInvoice(invoice.id!)
+      } catch (error) {
+        console.error("Error sending email:", error)
+        alert("Napaka pri pošiljanju e-pošte")
+      }
     }
   }
 
@@ -56,10 +63,25 @@ export default function InvoiceViewPage() {
     }
   }
 
-  // DODAJTE FUNKCIJO ZA SAVE AS
   const handleSaveAs = () => {
     if (invoice) {
       router.push(`/invoices?edit=${invoice.id}&saveAs=true`)
+    }
+  }
+
+  // Dodajte funkcijo za označevanje kot plačan
+  const handleMarkAsPaid = async () => {
+    if (invoice) {
+      if (confirm(`Ali ste prepričani, da želite označiti račun ${invoice.invoiceNumber} kot plačan?`)) {
+        try {
+          await updateInvoiceStatus(invoice.id!, 'paid')
+          // Osvežimo podatke
+          await loadInvoice(invoice.id!)
+        } catch (error) {
+          console.error("Error marking invoice as paid:", error)
+          alert("Napaka pri označevanju računa kot plačan")
+        }
+      }
     }
   }
 
@@ -95,9 +117,34 @@ export default function InvoiceViewPage() {
                           <p className="text-sm text-muted-foreground">
                             {invoice.customer.Stranka}
                           </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              invoice.status === 'paid' 
+                                ? 'bg-green-100 text-green-800'
+                                : invoice.status === 'sent'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {invoice.status === 'paid' ? 'Plačan' : 
+                               invoice.status === 'sent' ? 'Poslan' : 'Osnutek'}
+                            </span>
+                            {invoice.status === 'paid' && (
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        {invoice.status !== 'paid' && (
+                          <Button 
+                            variant="outline" 
+                            onClick={handleMarkAsPaid} 
+                            className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Označi kot plačan
+                          </Button>
+                        )}
                         <Button variant="outline" onClick={handleSaveAs} className="gap-2">
                           <Copy className="h-4 w-4" />
                           Shrani kot nov
