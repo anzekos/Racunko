@@ -65,7 +65,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </div>
             </div>
             <div className="font-medium">2KM Consulting</div>
-            <div>Anže Kos • v1.6</div>
+            <div>Anže Kos • v2.0</div>
           </div>
         </div>
       )}
