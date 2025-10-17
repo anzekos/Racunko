@@ -78,7 +78,7 @@ export default function InvoicesListPage() {
   }
 
   const handleDownload = (invoice: SavedInvoice) => {
-    downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
+    downloadInvoicePDF(invoice)
   }
 
   const handleEmail = async (invoice: SavedInvoice) => {
