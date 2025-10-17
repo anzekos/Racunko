@@ -6,6 +6,7 @@ import { Users, FileText, Home, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
+import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
 
 interface SidebarProps {
   collapsed: boolean
