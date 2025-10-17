@@ -1,90 +1,293 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { query } from '@/lib/db-connection';
+// app/api/invoices/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { query } from '@/lib/db-connection'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { id } = req.query;
+interface RouteParams {
+  params: {
+    id: string
+  }
+}
 
-  if (req.method === 'GET') {
-    try {
-      const invoices = await query('SELECT * FROM Racuni WHERE id = ?', [id]);
-      
-      if (invoices.length === 0) {
-        return res.status(404).json({ message: 'Invoice not found' });
-      }
+// GET - pridobi posamezen račun
+export async function GET(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    const invoices = await query(
+      `SELECT 
+        i.*,
+        s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
+      FROM Invoices i
+      LEFT JOIN Stranka s ON i.customer_id = s.id
+      WHERE i.id = ?`,
+      [params.id]
+    )
 
-      const items = await query('SELECT * FROM RacunPostavke WHERE racunId = ?', [id]);
-      
-      const invoice = {
-        ...invoices[0],
-        items: items.map((item: any) => ({
-          description: item.description,
-          quantity: parseFloat(item.quantity),
-          price: parseFloat(item.price),
-          total: parseFloat(item.total)
-        }))
-      };
-
-      res.status(200).json(invoice);
-    } catch (error) {
-      console.error('Error fetching invoice:', error);
-      res.status(500).json({ message: 'Error fetching invoice' });
+    if (invoices.length === 0) {
+      return NextResponse.json(
+        { error: 'Račun ni najden' },
+        { status: 404 }
+      )
     }
-  } else if (req.method === 'PUT') {
-    try {
-      const invoice = req.body;
-      
-      // Update main invoice
+
+    const invoice = invoices[0]
+    const items = await query(
+      'SELECT * FROM InvoiceItems WHERE invoice_id = ?',
+      [params.id]
+    )
+
+    return NextResponse.json({
+      id: invoice.id.toString(),
+      invoiceNumber: invoice.invoice_number,
+      customer: {
+        id: invoice.customer_id,
+        Stranka: invoice.Stranka,
+        Naslov: invoice.Naslov,
+        Kraj_postna_st: invoice.Kraj_postna_st,
+        email: invoice.email,
+        ID_DDV: invoice.ID_DDV,
+      },
+      items: items.map((item: any) => ({
+        description: item.description,
+        quantity: parseFloat(item.quantity),
+        price: parseFloat(item.price),
+        total: parseFloat(item.total),
+      })),
+      serviceDescription: invoice.service_description,
+      issueDate: invoice.issue_date,
+      dueDate: invoice.due_date,
+      serviceDate: invoice.service_date,
+      totalWithoutVat: parseFloat(invoice.total_without_vat),
+      vat: parseFloat(invoice.vat),
+      totalPayable: parseFloat(invoice.total_payable),
+      status: invoice.status,
+      createdAt: invoice.created_at,
+      updatedAt: invoice.updated_at,
+    })
+  } catch (error) {
+    console.error('Napaka pri pridobivanju računa:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri pridobivanju računa' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT - posodobi račun
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    const invoice = await request.json()
+
+    // Posodobi račun
+    await query(
+      `UPDATE Invoices SET
+        invoice_number = ?,
+        customer_id = ?,
+        service_description = ?,
+        issue_date = ?,
+        due_date = ?,
+        service_date = ?,
+        total_without_vat = ?,
+        vat = ?,
+        total_payable = ?
+      WHERE id = ?`,
+      [
+        invoice.invoiceNumber,
+        invoice.customer.id,
+        invoice.serviceDescription || '',
+        invoice.issueDate,
+        invoice.dueDate,
+        invoice.serviceDate,
+        invoice.totalWithoutVat,
+        invoice.vat,
+        invoice.totalPayable,
+        params.id,
+      ]
+    )
+
+    // Izbriši stare postavke
+    await query('DELETE FROM InvoiceItems WHERE invoice_id = ?', [params.id])
+
+    // Vstavi nove postavke
+    for (const item of invoice.items) {
       await query(
-        `UPDATE Racuni SET 
-          invoiceNumber = ?, customerId = ?, customerName = ?, customerAddress = ?, customerCity = ?, 
-          customerEmail = ?, customerVatId = ?, serviceDescription = ?, issueDate = ?, dueDate = ?, 
-          serviceDate = ?, totalWithoutVat = ?, vat = ?, totalPayable = ?, status = ?
-         WHERE id = ?`,
-        [
-          invoice.invoiceNumber,
-          invoice.customer.id,
-          invoice.customer.Stranka,
-          invoice.customer.Naslov,
-          invoice.customer.Kraj_postna_st,
-          invoice.customer.email,
-          invoice.customer.ID_DDV,
-          invoice.serviceDescription,
-          invoice.issueDate,
-          invoice.dueDate,
-          invoice.serviceDate,
-          invoice.totalWithoutVat,
-          invoice.vat,
-          invoice.totalPayable,
-          invoice.status,
-          id
-        ]
-      );
-
-      // Delete old items and insert new ones
-      await query('DELETE FROM RacunPostavke WHERE racunId = ?', [id]);
-      
-      for (const item of invoice.items) {
-        await query(
-          `INSERT INTO RacunPostavke (racunId, description, quantity, price, total) VALUES (?, ?, ?, ?, ?)`,
-          [id, item.description, item.quantity, item.price, item.total]
-        );
-      }
-
-      res.status(200).json(invoice);
-    } catch (error) {
-      console.error('Error updating invoice:', error);
-      res.status(500).json({ message: 'Error updating invoice' });
+        `INSERT INTO InvoiceItems (
+          invoice_id, description, quantity, price, total
+        ) VALUES (?, ?, ?, ?, ?)`,
+        [params.id, item.description, item.quantity, item.price, item.total]
+      )
     }
-  } else if (req.method === 'DELETE') {
-    try {
-      await query('DELETE FROM Racuni WHERE id = ?', [id]);
-      res.status(204).end();
-    } catch (error) {
-      console.error('Error deleting invoice:', error);
-      res.status(500).json({ message: 'Error deleting invoice' });
+
+    return NextResponse.json({
+      ...invoice,
+      id: params.id,
+      updatedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Napaka pri posodabljanju računa:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri posodabljanju računa' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - izbriši račun
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    await query('DELETE FROM Invoices WHERE id = ?', [params.id])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Napaka pri brisanju računa:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri brisanju računa' },
+      { status: 500 }
+    )
+  }
+}
+  try {
+    const invoices = await query(
+      `SELECT 
+        i.*,
+        s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
+      FROM Invoices i
+      LEFT JOIN Stranka s ON i.customer_id = s.id
+      WHERE i.id = ?`,
+      [params.id]
+    )
+
+    if (invoices.length === 0) {
+      return NextResponse.json(
+        { error: 'Račun ni najden' },
+        { status: 404 }
+      )
     }
-  } else {
-    res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    const invoice = invoices[0]
+    const items = await query(
+      'SELECT * FROM InvoiceItems WHERE invoice_id = ?',
+      [params.id]
+    )
+
+    return NextResponse.json({
+      id: invoice.id.toString(),
+      invoiceNumber: invoice.invoice_number,
+      customer: {
+        id: invoice.customer_id,
+        Stranka: invoice.Stranka,
+        Naslov: invoice.Naslov,
+        Kraj_postna_st: invoice.Kraj_postna_st,
+        email: invoice.email,
+        ID_DDV: invoice.ID_DDV,
+      },
+      items: items.map((item: any) => ({
+        description: item.description,
+        quantity: parseFloat(item.quantity),
+        price: parseFloat(item.price),
+        total: parseFloat(item.total),
+      })),
+      serviceDescription: invoice.service_description,
+      issueDate: invoice.issue_date,
+      dueDate: invoice.due_date,
+      serviceDate: invoice.service_date,
+      totalWithoutVat: parseFloat(invoice.total_without_vat),
+      vat: parseFloat(invoice.vat),
+      totalPayable: parseFloat(invoice.total_payable),
+      status: invoice.status,
+      createdAt: invoice.created_at,
+      updatedAt: invoice.updated_at,
+    })
+  } catch (error) {
+    console.error('Napaka pri pridobivanju računa:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri pridobivanju računa' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT - posodobi račun
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const invoice = await request.json()
+
+    // Posodobi račun
+    await query(
+      `UPDATE Invoices SET
+        invoice_number = ?,
+        customer_id = ?,
+        service_description = ?,
+        issue_date = ?,
+        due_date = ?,
+        service_date = ?,
+        total_without_vat = ?,
+        vat = ?,
+        total_payable = ?
+      WHERE id = ?`,
+      [
+        invoice.invoiceNumber,
+        invoice.customer.id,
+        invoice.serviceDescription || '',
+        invoice.issueDate,
+        invoice.dueDate,
+        invoice.serviceDate,
+        invoice.totalWithoutVat,
+        invoice.vat,
+        invoice.totalPayable,
+        params.id,
+      ]
+    )
+
+    // Izbriši stare postavke
+    await query('DELETE FROM InvoiceItems WHERE invoice_id = ?', [params.id])
+
+    // Vstavi nove postavke
+    for (const item of invoice.items) {
+      await query(
+        `INSERT INTO InvoiceItems (
+          invoice_id, description, quantity, price, total
+        ) VALUES (?, ?, ?, ?, ?)`,
+        [params.id, item.description, item.quantity, item.price, item.total]
+      )
+    }
+
+    return NextResponse.json({
+      ...invoice,
+      id: params.id,
+      updatedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Napaka pri posodabljanju računa:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri posodabljanju računa' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - izbriši račun
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await query('DELETE FROM Invoices WHERE id = ?', [params.id])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Napaka pri brisanju računa:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri brisanju računa' },
+      { status: 500 }
+    )
   }
 }
