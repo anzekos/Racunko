@@ -14,6 +14,18 @@ import { fetchCustomers, fetchInvoices, saveInvoice, updateInvoice, type Custome
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
+// app/invoices/page.tsx
+import { Suspense } from "react"
+import InvoicesPageContent from "./invoices-content"
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Nalagam...</div>}>
+      <InvoicesPageContent />
+    </Suspense>
+  )
+}
+
 export default function InvoicesPage() {
   const searchParams = useSearchParams()
   const [customers, setCustomers] = useState<Customer[]>([])
