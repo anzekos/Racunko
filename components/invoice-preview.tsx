@@ -8,6 +8,14 @@ import Image from "next/image"
 import { downloadInvoicePDF, downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
+// Pomožna funkcija za formatiranje številk po evropskem standardu
+const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value)
+}
+
 interface InvoicePreviewProps {
   invoice: Invoice
   onDownload: () => void
@@ -189,7 +197,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
           </div>
 
-          {/* Invoice Number - popravljeno: enak font kot ostali */}
+          {/* Invoice Number */}
           <div className="mb-6">
             <div className="text-xl">
               <strong>Račun:</strong> {invoice.invoiceNumber}
@@ -206,7 +214,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
             </div>
           )}
 
-          {/* Invoice Items Table - bolj stisnjena */}
+          {/* Invoice Items Table */}
           <div className="mb-8">
             <table className="w-full border-collapse border border-gray-300 invoice-table">
               <thead>
@@ -221,9 +229,9 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                 {invoice.items.map((item, index) => (
                   <tr key={index}>
                     <td className="border border-gray-300 p-2">{item.description}</td>
-                    <td className="border border-gray-300 p-2 text-right">{item.quantity}</td>
-                    <td className="border border-gray-300 p-2 text-right">{item.price.toFixed(2)}</td>
-                    <td className="border border-gray-300 p-2 text-right">{item.total.toFixed(2)}</td>
+                    <td className="border border-gray-300 p-2 text-right">{formatNumber(item.quantity)}</td>
+                    <td className="border border-gray-300 p-2 text-right">{formatNumber(item.price)}</td>
+                    <td className="border border-gray-300 p-2 text-right">{formatNumber(item.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -232,19 +240,19 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
                   <td colSpan={3} className="border border-gray-300 p-2 text-left">
                     Skupaj brez DDV:
                   </td>
-                  <td className="border border-gray-300 p-2 text-right">{invoice.totalWithoutVat.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-right">{formatNumber(invoice.totalWithoutVat)}</td>
                 </tr>
                 <tr className="invoice-total">
                   <td colSpan={3} className="border border-gray-300 p-2 text-left">
                     DDV (22%):
                   </td>
-                  <td className="border border-gray-300 p-2 text-right">{invoice.vat.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-right">{formatNumber(invoice.vat)}</td>
                 </tr>
                 <tr className="invoice-total">
                   <td colSpan={3} className="border border-gray-300 p-2 text-left">
                     Skupaj za plačilo:
                   </td>
-                  <td className="border border-gray-300 p-2 text-right">{invoice.totalPayable.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-right">{formatNumber(invoice.totalPayable)}</td>
                 </tr>
               </tfoot>
             </table>
