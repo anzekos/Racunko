@@ -348,15 +348,6 @@ export default function InvoicesListPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleSaveAs(invoice.id!)}
-                                  className="gap-2"
-                                  title="Shrani kot nov račun"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
                                   onClick={() => handleDownload(invoice)}
                                   className="gap-2"
                                 >
