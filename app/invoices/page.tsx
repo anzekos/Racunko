@@ -76,7 +76,7 @@ function InvoicesPageContent() {
       if (isSaveAs || saveAsMode) {
         const saved = await saveInvoice({
           ...invoiceData,
-          invoiceNumber: generateNewInvoiceNumber() // Generiraj novo številko računa
+          //invoiceNumber: generateNewInvoiceNumber() // Generiraj novo številko računa
         })
         setCurrentInvoice(saved)
         setInvoiceCount(prev => prev + 1)
