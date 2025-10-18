@@ -85,6 +85,20 @@ export default function InvoiceViewPage() {
     }
   }
 
+  const handleMarkAsUnpaid = async () => {
+    if (invoice) {
+      if (confirm(`Ali ste prepričani, da želite označiti račun ${invoice.invoiceNumber} kot neplačan?`)) {
+        try {
+          await updateInvoiceStatus(invoice.id!, 'sent')
+          loadInvoice(invoice.id!)
+        } catch (error) {
+          console.error("Error marking invoice as unpaid:", error)
+          alert("Napaka pri označevanju računa kot neplačan")
+        }
+      }
+    }
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
@@ -143,6 +157,16 @@ export default function InvoiceViewPage() {
                           >
                             <CheckCircle className="h-4 w-4" />
                             Označi kot plačan
+                          </Button>
+                        )}
+                        {invoice.status === 'paid' && (
+                          <Button 
+                            variant="outline" 
+                            onClick={handleMarkAsUnpaid} 
+                            className="gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Označi kot neplačan
                           </Button>
                         )}
                         <Button variant="outline" onClick={handleSaveAs} className="gap-2">
