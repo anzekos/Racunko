@@ -105,22 +105,20 @@ export async function openEmailClient(invoice: Invoice | SavedInvoice, recipient
   const body = `
 Spoštovani,
 
-v prilogi vam pošiljamo račun št. ${invoice.invoiceNumber}.
+V priponki vam pošiljamo račun za izvedeno storitev. 
+
+Prosimo, da v namen plačila navedete: **PLAČILO RAČUNA ŠT. ${invoice.invoiceNumber}**
 
 Podatki o računu:
 - Številka računa: ${invoice.invoiceNumber}
 - Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
 - Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
-- Znesek: ${invoice.totalPayable.toFixed(2)} EUR
+- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR
 
-Plačilo prosimo nakažite na naš transakcijski račun:
-IBAN: SI56 0223 6026 1489 640
-Sklicevanje: ${invoice.invoiceNumber}
+Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640
+Sklic: SI00 ${invoice.invoiceNumber}
 
-Za vsa vprašanja smo vam na voljo.
-
-Lep pozdrav,
-2KM Consulting d.o.o.
+Hvala za sodelovanje in lep pozdrav.
   `.trim()
 
   const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
