@@ -85,10 +85,14 @@ export default function InvoicesListPage() {
     // Počakamo, da se komponenta naloži v DOM
     setTimeout(async () => {
       try {
-        const element = document.getElementById('hidden-invoice-preview-content')
+        const element = document.getElementById('invoice-preview-content')
         if (!element) {
+          console.error('Element not found!')
           throw new Error('Preview element not found')
         }
+
+        console.log('Element found:', element)
+        console.log('Element dimensions:', element.offsetWidth, element.offsetHeight)
 
         const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
         const url = URL.createObjectURL(pdfBlob)
@@ -105,7 +109,7 @@ export default function InvoicesListPage() {
       } finally {
         setPdfInvoice(null)
       }
-    }, 500)
+    }, 1000)
   }
 
   const handleEmail = async (invoice: SavedInvoice) => {
@@ -407,14 +411,12 @@ export default function InvoicesListPage() {
 
       {/* Skrita InvoicePreview komponenta za generiranje PDF-jev */}
       {pdfInvoice && (
-        <div className="fixed -left-[10000px] top-0 w-[210mm] bg-white">
-          <div id="hidden-invoice-preview-content">
-            <InvoicePreview
-              invoice={pdfInvoice}
-              onDownload={() => {}}
-              onSendEmail={() => {}}
-            />
-          </div>
+        <div style={{ position: 'fixed', left: '-10000px', top: '0', width: '210mm', backgroundColor: 'white' }}>
+          <InvoicePreview
+            invoice={pdfInvoice}
+            onDownload={() => {}}
+            onSendEmail={() => {}}
+          />
         </div>
       )}
     </div>
