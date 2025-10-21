@@ -45,21 +45,20 @@ export async function sendInvoiceEmail(invoice: Invoice, recipientEmail?: string
       to: email,
       subject: `Račun št. ${invoice.invoiceNumber} - 2KM Consulting`,
       body: `
-Spoštovani,<br><br>
+Spoštovani,
 
-V priponki vam pošiljamo račun za izvedeno storitev.<br><br>
+V priponki vam pošiljamo račun za izvedeno storitev. 
 
-Prosimo, da v namen plačila navedete: <strong>PLAČILO RAČUNA ŠT. ${invoice.invoiceNumber}</strong><br><br>
+Prosimo, da v namen plačila navedete: PLAČILO RAČUNA ŠT. ${invoice.invoiceNumber}
 
-<strong>Podatki o računu:</strong><br>
-- Številka računa: ${invoice.invoiceNumber}<br>
-- Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}<br>
-- Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}<br>
-- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR<br><br>
+Podatki o računu:
+- Številka računa: ${invoice.invoiceNumber}
+- Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
+- Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
+- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR
 
-<strong>Plačilo:</strong><br>
-Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640<br>
-Sklic: SI00 ${invoice.invoiceNumber}<br><br>
+Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640
+Sklic: SI00 ${invoice.invoiceNumber}
 
 Hvala za sodelovanje in lep pozdrav.
       `.trim(),
@@ -73,7 +72,6 @@ Hvala za sodelovanje in lep pozdrav.
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // For demonstration, we'll open the user's email client
-    // Dodajte header za HTML vsebino
     const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`
     window.open(mailtoLink, "_blank")
 
@@ -105,21 +103,20 @@ export async function openEmailClient(invoice: Invoice | SavedInvoice, recipient
 
   const subject = `Račun št. ${invoice.invoiceNumber} - 2KM Consulting`
   const body = `
-Spoštovani,<br><br>
+Spoštovani,
 
-V priponki vam pošiljamo račun za izvedeno storitev.<br><br>
+V priponki vam pošiljamo račun za izvedeno storitev. 
 
-Prosimo, da v namen plačila navedete: <strong>PLAČILO RAČUNA ŠT. ${invoice.invoiceNumber}</strong><br><br>
+Prosimo, da v namen plačila navedete: PLAČILO RAČUNA ŠT. ${invoice.invoiceNumber}
 
-<strong>Podatki o računu:</strong><br>
-- Številka računa: ${invoice.invoiceNumber}<br>
-- Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}<br>
-- Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}<br>
-- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR<br><br>
+Podatki o računu:
+- Številka računa: ${invoice.invoiceNumber}
+- Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
+- Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
+- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR
 
-<strong>Plačilo:</strong><br>
-Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640<br>
-Sklic: SI00 ${invoice.invoiceNumber}<br><br>
+Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640
+Sklic: SI00 ${invoice.invoiceNumber}
 
 Hvala za sodelovanje in lep pozdrav.
   `.trim()
