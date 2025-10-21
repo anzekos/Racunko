@@ -17,7 +17,9 @@ import {
   Plus,
   CheckCircle,
   Circle,
-  XCircle
+  XCircle,
+  CheckSquare,
+  Square
 } from "lucide-react"
 import { fetchInvoices, deleteInvoice, updateInvoiceStatus, type SavedInvoice } from "@/lib/database"
 import { generateInvoicePDFFromElement } from "@/lib/pdf-generator"
@@ -33,6 +35,8 @@ export default function InvoicesListPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [pdfInvoice, setPdfInvoice] = useState<SavedInvoice | null>(null)
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([])
+  const [isBulkDownloading, setIsBulkDownloading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -67,22 +71,94 @@ export default function InvoicesListPage() {
     }
   }
 
-  const handleDelete = async (id: string, invoiceNumber: string) => {
-    if (confirm(`Ali ste prepričani, da želite izbrisati račun ${invoiceNumber}?`)) {
-      try {
-        await deleteInvoice(id)
-        await loadInvoices()
-      } catch (error) {
-        console.error("Error deleting invoice:", error)
-        alert("Napaka pri brisanju računa")
+  // Funkcije za upravljanje izbire
+  const toggleInvoiceSelection = (invoiceId: string) => {
+    setSelectedInvoices(prev =>
+      prev.includes(invoiceId)
+        ? prev.filter(id => id !== invoiceId)
+        : [...prev, invoiceId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedInvoices.length === filteredInvoices.length) {
+      setSelectedInvoices([])
+    } else {
+      setSelectedInvoices(filteredInvoices.map(invoice => invoice.id!))
+    }
+  }
+
+  const isInvoiceSelected = (invoiceId: string) => {
+    return selectedInvoices.includes(invoiceId)
+  }
+
+  const isAllSelected = () => {
+    return filteredInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length
+  }
+
+  const isSomeSelected = () => {
+    return selectedInvoices.length > 0 && selectedInvoices.length < filteredInvoices.length
+  }
+
+  // Funkcija za množično prenašanje BREZ ZIP
+  const handleBulkDownload = async () => {
+    if (selectedInvoices.length === 0) return
+
+    setIsBulkDownloading(true)
+    const selectedInvoiceData = invoices.filter(invoice => selectedInvoices.includes(invoice.id!))
+
+    try {
+      for (const invoice of selectedInvoiceData) {
+        await new Promise<void>(async (resolve) => {
+          setPdfInvoice(invoice)
+          
+          // Počakamo, da se komponenta naloži v DOM
+          setTimeout(async () => {
+            try {
+              const element = document.getElementById('invoice-preview-content')
+              if (!element) {
+                console.error('Element not found for invoice:', invoice.invoiceNumber)
+                resolve()
+                return
+              }
+
+              const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
+              const url = URL.createObjectURL(pdfBlob)
+              const a = document.createElement("a")
+              a.href = url
+              a.download = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              
+              // Počakamo malo preden sprostimo URL, da se prenos zaključi
+              setTimeout(() => {
+                URL.revokeObjectURL(url)
+                resolve()
+              }, 100)
+            } catch (error) {
+              console.error(`Napaka pri prenosu računa ${invoice.invoiceNumber}:`, error)
+              resolve()
+            } finally {
+              setPdfInvoice(null)
+            }
+          }, 1000)
+        })
       }
+      
+      // Počistimo izbire po uspešnem prenosu
+      setSelectedInvoices([])
+    } catch (error) {
+      console.error('Napaka pri množičnem prenosu:', error)
+      alert('Napaka pri prenosu računov')
+    } finally {
+      setIsBulkDownloading(false)
     }
   }
 
   const handleDownload = async (invoice: SavedInvoice) => {
     setPdfInvoice(invoice)
     
-    // Počakamo, da se komponenta naloži v DOM
     setTimeout(async () => {
       try {
         const element = document.getElementById('invoice-preview-content')
@@ -90,9 +166,6 @@ export default function InvoicesListPage() {
           console.error('Element not found!')
           throw new Error('Preview element not found')
         }
-
-        console.log('Element found:', element)
-        console.log('Element dimensions:', element.offsetWidth, element.offsetHeight)
 
         const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
         const url = URL.createObjectURL(pdfBlob)
@@ -110,6 +183,20 @@ export default function InvoicesListPage() {
         setPdfInvoice(null)
       }
     }, 1000)
+  }
+
+  const handleDelete = async (id: string, invoiceNumber: string) => {
+    if (confirm(`Ali ste prepričani, da želite izbrisati račun ${invoiceNumber}?`)) {
+      try {
+        await deleteInvoice(id)
+        await loadInvoices()
+        // Odstranimo iz izbranih, če je bil izbran
+        setSelectedInvoices(prev => prev.filter(invoiceId => invoiceId !== id))
+      } catch (error) {
+        console.error("Error deleting invoice:", error)
+        alert("Napaka pri brisanju računa")
+      }
+    }
   }
 
   const handleEmail = async (invoice: SavedInvoice) => {
@@ -152,10 +239,6 @@ export default function InvoicesListPage() {
 
   const handleEdit = (invoiceId: string) => {
     router.push(`/invoices?edit=${invoiceId}`)
-  }
-
-  const handleSaveAs = (invoiceId: string) => {
-    router.push(`/invoices?edit=${invoiceId}&saveAs=true`)
   }
 
   const getStatusBadge = (status: string) => {
@@ -220,7 +303,7 @@ export default function InvoicesListPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -258,27 +341,88 @@ export default function InvoicesListPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Izbranih</p>
+                          <p className="text-2xl font-semibold">{selectedInvoices.length}</p>
+                        </div>
+                        <CheckSquare className="h-8 w-8 text-blue-500 opacity-20" />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
-                {/* Search */}
-                <Card className="mb-6">
-                  <CardContent className="p-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Išči po številki računa, stranki ali statusu..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Search and Bulk Actions */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <Card className="flex-1">
+                    <CardContent className="p-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Išči po številki računa, stranki ali statusu..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {selectedInvoices.length > 0 && (
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm text-muted-foreground">
+                            Izbranih: <strong>{selectedInvoices.length}</strong>
+                          </div>
+                          <Button 
+                            onClick={handleBulkDownload} 
+                            disabled={isBulkDownloading}
+                            className="gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            {isBulkDownloading ? "Prenašam..." : `Prenesi ${selectedInvoices.length} računov`}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setSelectedInvoices([])}
+                            className="gap-2"
+                          >
+                            Počisti izbiro
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
 
                 {/* Invoices List */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Računi ({filteredInvoices.length})</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Računi ({filteredInvoices.length})</CardTitle>
+                      {filteredInvoices.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleSelectAll}
+                            className="flex items-center gap-2"
+                          >
+                            {isAllSelected() ? (
+                              <CheckSquare className="h-4 w-4 text-primary" />
+                            ) : isSomeSelected() ? (
+                              <Square className="h-4 w-4 border-2 border-muted-foreground rounded" />
+                            ) : (
+                              <Square className="h-4 w-4 border-2 border-muted-foreground rounded" />
+                            )}
+                            {isAllSelected() ? "Počisti vse" : "Izberi vse"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
@@ -292,9 +436,22 @@ export default function InvoicesListPage() {
                         {filteredInvoices.map((invoice) => (
                           <div
                             key={invoice.id}
-                            className={getInvoiceCardClass(invoice.status)}
+                            className={`${getInvoiceCardClass(invoice.status)} ${
+                              isInvoiceSelected(invoice.id!) ? 'ring-2 ring-primary ring-opacity-50' : ''
+                            }`}
                           >
-                            <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <button
+                                onClick={() => toggleInvoiceSelection(invoice.id!)}
+                                className="mt-1 flex-shrink-0"
+                              >
+                                {isInvoiceSelected(invoice.id!) ? (
+                                  <CheckSquare className="h-5 w-5 text-primary" />
+                                ) : (
+                                  <Square className="h-5 w-5 text-muted-foreground opacity-60" />
+                                )}
+                              </button>
+                              
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -327,7 +484,7 @@ export default function InvoicesListPage() {
                                   Ustvarjeno: {new Date(invoice.createdAt).toLocaleString("sl-SI")}
                                 </div>
                               </div>
-                              <div className="flex gap-2 ml-4">
+                              <div className="flex gap-2 ml-4 flex-shrink-0">
                                 <Button
                                   variant="outline"
                                   size="sm"
