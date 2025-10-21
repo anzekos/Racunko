@@ -15,13 +15,12 @@ import {
   Search,
   Eye,
   Plus,
-  Copy,
   CheckCircle,
   Circle,
-  XCircle // Dodamo ikono za "Označi kot neplačan"
+  XCircle
 } from "lucide-react"
 import { fetchInvoices, deleteInvoice, updateInvoiceStatus, type SavedInvoice } from "@/lib/database"
-import { downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
+import { generateInvoicePDFFromElement } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -82,25 +81,38 @@ export default function InvoicesListPage() {
 
   const handleDownload = async (invoice: SavedInvoice) => {
     setPdfInvoice(invoice)
+    
     // Počakamo, da se komponenta naloži v DOM
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
+        const element = document.getElementById('hidden-invoice-preview-content')
+        if (!element) {
+          throw new Error('Preview element not found')
+        }
+
+        const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
+        const url = URL.createObjectURL(pdfBlob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
       } catch (error) {
         console.error('Napaka pri prenosu PDF-ja:', error)
-        alert('Napaka pri prenosu PDF-ja: ' + error.message)
+        alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
       } finally {
         setPdfInvoice(null)
       }
-    }, 100)
+    }, 500)
   }
 
   const handleEmail = async (invoice: SavedInvoice) => {
     try {
-      // Če račun še ni poslan, ga označimo kot poslan
       if (invoice.status === 'draft') {
         await updateInvoiceStatus(invoice.id!, 'sent')
-        await loadInvoices() // Osvežimo seznam
+        await loadInvoices()
       }
       
       openEmailClient(invoice)
@@ -114,7 +126,7 @@ export default function InvoicesListPage() {
     if (confirm(`Ali ste prepričani, da želite označiti račun ${invoiceNumber} kot plačan?`)) {
       try {
         await updateInvoiceStatus(invoiceId, 'paid')
-        await loadInvoices() // Osvežimo seznam
+        await loadInvoices()
       } catch (error) {
         console.error("Error marking invoice as paid:", error)
         alert("Napaka pri označevanju računa kot plačan")
@@ -122,12 +134,11 @@ export default function InvoicesListPage() {
     }
   }
 
-  // DODANA FUNKCIJA: Vračanje statusa iz "plačano" v "poslan"
   const handleMarkAsUnpaid = async (invoiceId: string, invoiceNumber: string) => {
     if (confirm(`Ali ste prepričani, da želite označiti račun ${invoiceNumber} kot neplačan?`)) {
       try {
         await updateInvoiceStatus(invoiceId, 'sent')
-        await loadInvoices() // Osvežimo seznam
+        await loadInvoices()
       } catch (error) {
         console.error("Error marking invoice as unpaid:", error)
         alert("Napaka pri označevanju računa kot neplačan")
@@ -165,7 +176,6 @@ export default function InvoicesListPage() {
     )
   }
 
-  // Funkcija za pridobivanje CSS razredov glede na status
   const getInvoiceCardClass = (status: string) => {
     const baseClass = "border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
     
@@ -351,9 +361,7 @@ export default function InvoicesListPage() {
                                   <Mail className="h-4 w-4" />
                                 </Button>
                                 
-                                {/* POGOJNI PRIKAZ GUMBOV ZA STATUS */}
                                 {invoice.status !== 'paid' ? (
-                                  // Gumb za označevanje kot plačan (za neplačane račune)
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -364,7 +372,6 @@ export default function InvoicesListPage() {
                                     <CheckCircle className="h-4 w-4" />
                                   </Button>
                                 ) : (
-                                  // Gumb za označevanje kot neplačan (za plačane račune)
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -400,12 +407,14 @@ export default function InvoicesListPage() {
 
       {/* Skrita InvoicePreview komponenta za generiranje PDF-jev */}
       {pdfInvoice && (
-        <div className="fixed -left-[10000px] top-0 opacity-0">
-          <InvoicePreview
-            invoice={pdfInvoice}
-            onDownload={() => {}}
-            onSendEmail={() => {}}
-          />
+        <div className="fixed -left-[10000px] top-0 w-[210mm] bg-white">
+          <div id="hidden-invoice-preview-content">
+            <InvoicePreview
+              invoice={pdfInvoice}
+              onDownload={() => {}}
+              onSendEmail={() => {}}
+            />
+          </div>
         </div>
       )}
     </div>
