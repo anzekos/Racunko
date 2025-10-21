@@ -206,7 +206,7 @@ export default function InvoicesListPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -228,19 +228,6 @@ export default function InvoicesListPage() {
                           </p>
                         </div>
                         <FileText className="h-8 w-8 text-gray-500 opacity-20" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Poslani</p>
-                          <p className="text-2xl font-semibold">
-                            {invoices.filter(i => i.status === 'sent').length}
-                          </p>
-                        </div>
-                        <Mail className="h-8 w-8 text-blue-500 opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
