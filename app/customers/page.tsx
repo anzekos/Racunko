@@ -1493,7 +1493,9 @@ function CustomersPageContent() {
 export default function CustomersPage() {
   return (
     <ProtectedRoute>
-      <CustomersPageContent />
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Nalagam...</div>}>
+        <CustomersPageContent />
+      </Suspense>
     </ProtectedRoute>
   )
 }
