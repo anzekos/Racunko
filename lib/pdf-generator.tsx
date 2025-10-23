@@ -1,9 +1,8 @@
-import type { SavedInvoice, SavedQuote, SavedCreditNote } from "./database"
+import type { SavedInvoice } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-type DocumentType = SavedInvoice | SavedQuote | SavedCreditNote
-
+// Pomožna funkcija za pretvorbo oklch barv v hex/rgb
 function convertOklchToHex(oklchValue: string): string {
   if (!oklchValue.includes('oklch')) return oklchValue
   if (oklchValue.includes('0.7') && oklchValue.includes('0.05')) return '#934435'
@@ -12,6 +11,7 @@ function convertOklchToHex(oklchValue: string): string {
   return '#000000'
 }
 
+// Pomožna funkcija za normalizacijo CSS barv
 function normalizeColors(element: HTMLElement) {
   const computedStyle = window.getComputedStyle(element)
   
@@ -28,7 +28,8 @@ function normalizeColors(element: HTMLElement) {
   }
 }
 
-function addFooterToPDF(pdf: jsPDF, document: DocumentType) {
+// Funkcija za dodajanje footera na dno PDF-ja
+function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
@@ -58,21 +59,23 @@ function addFooterToPDF(pdf: jsPDF, document: DocumentType) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
-export async function generateDocumentPDFFromElement(
-  element: HTMLElement, 
-  document: DocumentType
-): Promise<Blob> {
+// ENOTNA funkcija za generiranje PDF-ja iz elementa
+export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
   try {
+    // Skrijemo akcijske gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = 'none'
     })
 
+    // Kloniramo element
     const clonedElement = element.cloneNode(true) as HTMLElement
     
+    // Odstranimo footer elemente, ker jih dodamo ročno v PDF
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
     footerElements.forEach(footer => footer.remove())
     
+    // Ustvarimo začasen div
     const tempDiv = document.createElement('div')
     tempDiv.style.position = 'fixed'
     tempDiv.style.top = '-9999px'
@@ -86,14 +89,17 @@ export async function generateDocumentPDFFromElement(
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
+    // Počakamo, da se vse naloži
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    // Normaliziramo barve
     const allElements = tempDiv.querySelectorAll('*')
     allElements.forEach(el => {
       const element = el as HTMLElement
       normalizeColors(element)
     })
 
+    // Ustvarimo canvas
     const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -111,11 +117,13 @@ export async function generateDocumentPDFFromElement(
       }
     })
 
+    // Počistimo
     document.body.removeChild(tempDiv)
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = ''
     })
 
+    // Ustvarimo PDF
     const imgData = canvas.toDataURL('image/png', 1.0)
     const pdf = new jsPDF('p', 'mm', 'a4')
     
@@ -139,7 +147,8 @@ export async function generateDocumentPDFFromElement(
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     }
 
-    addFooterToPDF(pdf, document)
+    // Dodamo footer
+    addFooterToPDF(pdf, invoice)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
   } catch (error) {
@@ -151,81 +160,15 @@ export async function generateDocumentPDFFromElement(
   }
 }
 
-// Invoice-specific functions
-export async function generateInvoicePDFFromElement(
-  element: HTMLElement, 
-  invoice: SavedInvoice
-): Promise<Blob> {
-  return generateDocumentPDFFromElement(element, invoice)
-}
-
-export function downloadInvoicePDF(invoice: SavedInvoice) {
+export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
   const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
-  downloadDocumentPDF('invoice-preview-content', invoice, filename)
-}
 
-export function downloadInvoicePDFFromPreview(
-  invoice: SavedInvoice, 
-  previewElementId: string = 'invoice-preview-content'
-) {
-  const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
-  downloadDocumentPDF(previewElementId, invoice, filename)
-}
-
-// Quote-specific functions
-export async function generateQuotePDFFromElement(
-  element: HTMLElement, 
-  quote: SavedQuote
-): Promise<Blob> {
-  return generateDocumentPDFFromElement(element, quote)
-}
-
-export function downloadQuotePDF(quote: SavedQuote) {
-  const filename = `ponudba-${quote.quoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
-  downloadDocumentPDF('quote-preview-content', quote, filename)
-}
-
-export function downloadQuotePDFFromPreview(
-  quote: SavedQuote, 
-  previewElementId: string = 'quote-preview-content'
-) {
-  const filename = `ponudba-${quote.quoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
-  downloadDocumentPDF(previewElementId, quote, filename)
-}
-
-// Credit Note-specific functions
-export async function generateCreditNotePDFFromElement(
-  element: HTMLElement, 
-  creditNote: SavedCreditNote
-): Promise<Blob> {
-  return generateDocumentPDFFromElement(element, creditNote)
-}
-
-export function downloadCreditNotePDF(creditNote: SavedCreditNote) {
-  const filename = `dobropis-${creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
-  downloadDocumentPDF('credit-note-preview-content', creditNote, filename)
-}
-
-export function downloadCreditNotePDFFromPreview(
-  creditNote: SavedCreditNote, 
-  previewElementId: string = 'credit-note-preview-content'
-) {
-  const filename = `dobropis-${creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
-  downloadDocumentPDF(previewElementId, creditNote, filename)
-}
-
-// Generic download function
-function downloadDocumentPDF(
-  previewElementId: string, 
-  document: DocumentType, 
-  filename: string
-) {
   const element = document.getElementById(previewElementId)
   if (!element) {
     throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
   }
 
-  generateDocumentPDFFromElement(element, document)
+  generateInvoicePDFFromElement(element, invoice)
     .then((pdfBlob) => {
       const url = URL.createObjectURL(pdfBlob)
       const a = document.createElement("a")
