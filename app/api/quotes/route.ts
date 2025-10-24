@@ -4,14 +4,14 @@ import { query } from '@/lib/db-connection'
 
 export async function GET() {
   try {
-    const quotes = await query(`
-      SELECT 
+    const quotes = await query(
+      `SELECT 
         q.*,
         s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
       FROM Quotes q
       LEFT JOIN Stranka s ON q.customer_id = s.id
-      ORDER BY q.created_at DESC
-    `)
+      ORDER BY q.created_at DESC`
+    )
 
     const quotesWithItems = await Promise.all(
       quotes.map(async (quote: any) => {
@@ -19,7 +19,7 @@ export async function GET() {
           'SELECT * FROM QuoteItems WHERE quote_id = ?',
           [quote.id]
         )
-        
+
         return {
           id: quote.id.toString(),
           quoteNumber: quote.quote_number,
@@ -39,7 +39,7 @@ export async function GET() {
           })),
           serviceDescription: quote.service_description,
           issueDate: quote.issue_date,
-          validUntil: quote.valid_until,
+          dueDate: quote.due_date,
           serviceDate: quote.service_date,
           totalWithoutVat: parseFloat(quote.total_without_vat),
           vat: parseFloat(quote.vat),
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const result = await query(
       `INSERT INTO Quotes (
         quote_number, customer_id, service_description,
-        issue_date, valid_until, service_date,
+        issue_date, due_date, service_date,
         total_without_vat, vat, total_payable, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
       [
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         quote.customer.id,
         quote.serviceDescription || '',
         quote.issueDate,
-        quote.validUntil,
+        quote.dueDate,
         quote.serviceDate,
         quote.totalWithoutVat,
         quote.vat,
