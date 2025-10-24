@@ -1,203 +1,227 @@
+// app/quotes/view/[id]/page.tsx
 "use client"
-
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
-import { QuotePreview } from "@/components/quote-preview"
-import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
-import { fetchQuoteById, type SavedQuote, updateQuoteStatus } from "@/lib/database"
-import { downloadQuotePDF } from "@/lib/pdf-generator"
-import { openEmailClient } from "@/lib/email-service"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Download, Send, Edit, Trash2 } from "lucide-react"
+import Link from "next/link"
 
-export default function QuoteViewPage() {
+interface Quote {
+  id: string
+  quoteNumber: string
+  customer: {
+    Stranka: string
+    Naslov: string
+    Kraj_postna_st: string
+    email: string
+    ID_DDV: string
+  }
+  items: Array<{
+    description: string
+    quantity: number
+    price: number
+    total: number
+  }>
+  serviceDescription: string
+  issueDate: string
+  dueDate: string
+  serviceDate: string
+  totalWithoutVat: number
+  vat: number
+  totalPayable: number
+  status: string
+}
+
+const statusLabels: { [key: string]: string } = {
+  draft: 'Osnutek',
+  sent: 'Poslano',
+  accepted: 'Sprejeto',
+  rejected: 'Zavrnjeno',
+  cancelled: 'Preklicano',
+}
+
+export default function ViewQuotePage() {
   const params = useParams()
   const router = useRouter()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [quote, setQuote] = useState<SavedQuote | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [quote, setQuote] = useState<Quote | null>(null)
 
   useEffect(() => {
     if (params.id) {
-      loadQuote(params.id as string)
+      fetchQuote(params.id as string)
     }
   }, [params.id])
 
-  const loadQuote = async (id: string) => {
+  const fetchQuote = async (id: string) => {
     try {
-      setLoading(true)
-      const data = await fetchQuoteById(id)
-      setQuote(data)
+      const response = await fetch(`/api/quotes/${id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setQuote(data)
+      }
     } catch (error) {
-      console.error("Error loading quote:", error)
-      alert("Napaka pri nalaganju ponudbe")
-      router.push("/quotes/list")
-    } finally {
-      setLoading(false)
+      console.error('Error fetching quote:', error)
     }
   }
 
-  const handleDownloadPDF = () => {
-    if (quote) {
-      downloadQuotePDF(quote)
-    }
-  }
+  const deleteQuote = async () => {
+    if (!quote) return
 
-  const handleSendEmail = async () => {
-    if (quote) {
+    if (confirm('Ali ste prepričani, da želite izbrisati to ponudbo?')) {
       try {
-        await openEmailClient(quote, 'quote')
-        // Osvežimo podatke, da vidimo spremembo statusa
-        await loadQuote(quote.id!)
+        const response = await fetch(`/api/quotes/${quote.id}`, {
+          method: 'DELETE',
+        })
+
+        if (response.ok) {
+          router.push('/quotes/list')
+        }
       } catch (error) {
-        console.error("Error sending email:", error)
-        alert("Napaka pri pošiljanju e-pošte")
+        console.error('Error deleting quote:', error)
       }
     }
   }
 
-  const handleEdit = () => {
-    if (quote) {
-      router.push(`/quotes?edit=${quote.id}`)
-    }
-  }
-
-  const handleSaveAs = () => {
-    if (quote) {
-      router.push(`/quotes?edit=${quote.id}&saveAs=true`)
-    }
-  }
-
-  const handleMarkAsAccepted = async () => {
-    if (quote) {
-      if (confirm(`Ali ste prepričani, da želite označiti ponudbo ${quote.quoteNumber} kot sprejeto?`)) {
-        try {
-          await updateQuoteStatus(quote.id!, 'accepted')
-          // Osvežimo podatke
-          await loadQuote(quote.id!)
-        } catch (error) {
-          console.error("Error marking quote as accepted:", error)
-          alert("Napaka pri označevanju ponudbe kot sprejete")
-        }
-      }
-    }
-  }
-
-  const handleMarkAsRejected = async () => {
-    if (quote) {
-      if (confirm(`Ali ste prepričani, da želite označiti ponudbo ${quote.quoteNumber} kot zavrnjeno?`)) {
-        try {
-          await updateQuoteStatus(quote.id!, 'rejected')
-          loadQuote(quote.id!)
-        } catch (error) {
-          console.error("Error marking quote as rejected:", error)
-          alert("Napaka pri označevanju ponudbe kot zavrnjene")
-        }
-      }
-    }
+  if (!quote) {
+    return <div className="container mx-auto p-6">Nalagam...</div>
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-16" : "ml-64"}`}>
-        <Header />
-
-        <main className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto">
-            <div className="p-6">
-              <div className="max-w-6xl mx-auto">
-                {loading ? (
-                  <div className="text-center py-8">Nalagam ponudbo...</div>
-                ) : quote ? (
-                  <>
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => router.push("/quotes/list")}
-                          className="gap-2 bg-transparent"
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                          Nazaj na seznam
-                        </Button>
-                        <div>
-                          <h1 className="text-2xl font-semibold text-foreground">
-                            Ponudba {quote.quoteNumber}
-                          </h1>
-                          <p className="text-sm text-muted-foreground">
-                            {quote.customer.Stranka}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              quote.status === 'accepted' 
-                                ? 'bg-green-100 text-green-800'
-                                : quote.status === 'sent'
-                                ? 'bg-blue-100 text-blue-800'
-                                : quote.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : quote.status === 'expired'
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {quote.status === 'accepted' ? 'Sprejeta' : 
-                               quote.status === 'sent' ? 'Poslana' : 
-                               quote.status === 'rejected' ? 'Zavrnjena' :
-                               quote.status === 'expired' ? 'Potekla' : 'Osnutek'}
-                            </span>
-                            {quote.status === 'accepted' && (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {quote.status !== 'accepted' && quote.status !== 'rejected' && (
-                          <>
-                            <Button 
-                              variant="outline" 
-                              onClick={handleMarkAsAccepted} 
-                              className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              Označi kot sprejeto
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              onClick={handleMarkAsRejected} 
-                              className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Označi kot zavrnjeno
-                            </Button>
-                          </>
-                        )}
-                        <Button variant="outline" onClick={handleSaveAs} className="gap-2">
-                          <Copy className="h-4 w-4" />
-                          Shrani kot novo
-                        </Button>
-                        <Button variant="outline" onClick={handleEdit} className="gap-2">
-                          <Edit className="h-4 w-4" />
-                          Uredi ponudbo
-                        </Button>
-                      </div>
-                    </div>
-
-                    <QuotePreview
-                      quote={quote}
-                      onDownload={handleDownloadPDF}
-                      onSendEmail={handleSendEmail}
-                    />
-                  </>
-                ) : (
-                  <div className="text-center py-8">Ponudba ni bila najdena</div>
-                )}
-              </div>
-            </div>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/quotes/list">
+            <Button variant="outline" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Ponudba {quote.quoteNumber}</h1>
+            <p className="text-muted-foreground">Podrobnosti ponudbe</p>
           </div>
-        </main>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+          <Button variant="outline" size="sm">
+            <Send className="h-4 w-4 mr-2" />
+            Pošlji
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/quotes/edit/${quote.id}`}>
+              <Edit className="h-4 w-4 mr-2" />
+              Uredi
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" onClick={deleteQuote}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Izbriši
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Podatki o ponudbi</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Številka ponudbe</p>
+                  <p className="font-medium">{quote.quoteNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge variant="secondary">{statusLabels[quote.status]}</Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Datum izdaje</p>
+                  <p className="font-medium">{new Date(quote.issueDate).toLocaleDateString('sl-SI')}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Rok veljavnosti</p>
+                  <p className="font-medium">{new Date(quote.dueDate).toLocaleDateString('sl-SI')}</p>
+                </div>
+              </div>
+              
+              {quote.serviceDescription && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Opis storitve</p>
+                  <p className="font-medium">{quote.serviceDescription}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Postavke</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Opis</TableHead>
+                    <TableHead className="text-right">Količina</TableHead>
+                    <TableHead className="text-right">Cena</TableHead>
+                    <TableHead className="text-right">Skupaj</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quote.items.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell className="text-right">{item.quantity}</TableCell>
+                      <TableCell className="text-right">{item.price.toFixed(2)} €</TableCell>
+                      <TableCell className="text-right">{item.total.toFixed(2)} €</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Stranka</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="font-medium">{quote.customer.Stranka}</p>
+              <p className="text-sm">{quote.customer.Naslov}</p>
+              <p className="text-sm">{quote.customer.Kraj_postna_st}</p>
+              <p className="text-sm">{quote.customer.email}</p>
+              <p className="text-sm">ID za DDV: {quote.customer.ID_DDV}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Zneski</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span>Osnova za DDV:</span>
+                <span>{quote.totalWithoutVat.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between">
+                <span>DDV:</span>
+                <span>{quote.vat.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t pt-2">
+                <span>SKUPAJ:</span>
+                <span>{quote.totalPayable.toFixed(2)} €</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
