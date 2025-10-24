@@ -59,6 +59,17 @@ function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
+// lib/pdf-generator.ts - kombinirani eksporti
+export { 
+  generateInvoicePDFFromElement, 
+  downloadInvoicePDFFromPreview 
+} from './pdf-invoice-generator'
+
+export { 
+  generateQuotePDFFromElement, 
+  downloadQuotePDF 
+} from './pdf-quote-generator'
+
 // ENOTNA funkcija za generiranje PDF-ja iz elementa
 export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
   try {
