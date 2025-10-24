@@ -1,20 +1,11 @@
+// components/sidebar.tsx
 "use client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { 
-  Users, 
-  FileText, 
-  Home, 
-  ChevronLeft, 
-  ChevronRight, 
-  ListChecks,
-  FileStack,
-  FileMinus
-} from "lucide-react"
+import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks, Quote, Receipt, FileSignature } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { useState } from "react"
 
 interface SidebarProps {
   collapsed: boolean
@@ -23,39 +14,50 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const [documentsExpanded, setDocumentsExpanded] = useState(
-    pathname.includes("/invoices") || 
-    pathname.includes("/quotes") || 
-    pathname.includes("/credit-notes")
-  )
-  
-  const documentItems = [
+
+  const menuItems = [
+    { icon: Home, label: "Domov", href: "/", active: pathname === "/" },
+    { icon: Users, label: "Stranke", href: "/customers", active: pathname === "/customers" },
     { 
       icon: FileText, 
       label: "Računi", 
-      href: "/invoices", 
-      listHref: "/invoices/list",
-      active: pathname.includes("/invoices")
+      href: "/invoices",
+      active: pathname.includes('/invoices') && !pathname.includes('/list'),
+      submenu: [
+        { label: "Nov račun", href: "/invoices" },
+        { label: "Vsi računi", href: "/invoices/list" }
+      ]
     },
     { 
-      icon: FileStack, 
+      icon: Quote, 
       label: "Ponudbe", 
-      href: "/quotes", 
-      listHref: "/quotes/list",
-      active: pathname.includes("/quotes")
+      href: "/quotes",
+      active: pathname.includes('/quotes') && !pathname.includes('/list'),
+      submenu: [
+        { label: "Nova ponudba", href: "/quotes" },
+        { label: "Vse ponudbe", href: "/quotes/list" }
+      ]
     },
     { 
-      icon: FileMinus, 
+      icon: Receipt, 
       label: "Dobropisi", 
-      href: "/credit-notes", 
-      listHref: "/credit-notes/list",
-      active: pathname.includes("/credit-notes")
+      href: "/credit-notes",
+      active: pathname.includes('/credit-notes') && !pathname.includes('/list'),
+      submenu: [
+        { label: "Nov dobropis", href: "/credit-notes" },
+        { label: "Vsi dobropisi", href: "/credit-notes/list" }
+      ]
     },
-  ]
-  
-  const mainMenuItems = [
-    { icon: Home, label: "Domov", href: "/", active: pathname === "/" },
-    { icon: Users, label: "Stranke", href: "/customers", active: pathname === "/customers" },
+    { 
+      icon: FileSignature, 
+      label: "Pogodbe", 
+      href: "/contracts",
+      active: pathname.includes('/contracts') && !pathname.includes('/list'),
+      submenu: [
+        { label: "Nova pogodba", href: "/contracts" },
+        { label: "Vse pogodbe", href: "/contracts/list" }
+      ]
+    },
   ]
 
   return (
@@ -82,69 +84,37 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
       
       <nav className="p-2">
-        {/* Glavni meni */}
-        {mainMenuItems.map((item, index) => (
-          <Link key={index} href={item.href} passHref>
-            <Button
-              variant={item.active ? "secondary" : "ghost"}
-              className={cn("w-full justify-start gap-3 mb-1", collapsed && "justify-center px-2")}
-            >
-              <item.icon className="h-4 w-4" />
-              {!collapsed && <span>{item.label}</span>}
-            </Button>
-          </Link>
-        ))}
-
-        {/* Sekcija dokumentov */}
-        {!collapsed && (
-          <div className="mt-4 mb-2">
-            <Button
-              variant="ghost"
-              onClick={() => setDocumentsExpanded(!documentsExpanded)}
-              className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <FileText className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase">Dokumenti</span>
-              <ChevronRight 
-                className={cn(
-                  "h-4 w-4 ml-auto transition-transform",
-                  documentsExpanded && "rotate-90"
-                )} 
-              />
-            </Button>
-          </div>
-        )}
-
-        {/* Dokumenti - razširjeni ali samo ikone */}
-        {(documentsExpanded || collapsed) && documentItems.map((item, index) => (
-          <div key={index} className="space-y-1">
+        {menuItems.map((item, index) => (
+          <div key={index} className="mb-1">
             <Link href={item.href} passHref>
               <Button
-                variant={item.active && !pathname.includes("/list") ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start gap-3 mb-1",
-                  collapsed ? "justify-center px-2" : "pl-8"
-                )}
+                variant={item.active ? "secondary" : "ghost"}
+                className={cn("w-full justify-start gap-3", collapsed && "justify-center px-2")}
               >
                 <item.icon className="h-4 w-4" />
-                {!collapsed && <span>Nov {item.label.toLowerCase().slice(0, -1)}</span>}
+                {!collapsed && <span>{item.label}</span>}
               </Button>
             </Link>
-            {!collapsed && (
-              <Link href={item.listHref} passHref>
-                <Button
-                  variant={item.active && pathname.includes("/list") ? "secondary" : "ghost"}
-                  className="w-full justify-start gap-3 mb-1 pl-12"
-                >
-                  <ListChecks className="h-4 w-4" />
-                  <span>Vsi {item.label.toLowerCase()}</span>
-                </Button>
-              </Link>
+            
+            {/* Submenu items */}
+            {!collapsed && item.submenu && (
+              <div className="ml-6 mt-1 space-y-1">
+                {item.submenu.map((subItem, subIndex) => (
+                  <Link key={subIndex} href={subItem.href} passHref>
+                    <Button
+                      variant={pathname === subItem.href ? "secondary" : "ghost"}
+                      className="w-full justify-start text-xs h-8"
+                    >
+                      {subItem.label}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
             )}
           </div>
         ))}
       </nav>
-      
+
       {!collapsed && (
         <div className="absolute bottom-4 left-4 right-4">
           <div className="text-xs text-muted-foreground text-center space-y-1">
@@ -154,7 +124,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </div>
             </div>
             <div className="font-medium">2KM Consulting</div>
-            <div>Anže Kos • v2.1</div>
+            <div>Anže Kos • v2.0</div>
           </div>
         </div>
       )}
