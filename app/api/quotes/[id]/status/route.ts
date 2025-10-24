@@ -11,9 +11,8 @@ interface RouteParams {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { status } = await request.json()
-
-    // Preverimo veljavnost statusa
-    const validStatuses = ['draft', 'sent', 'accepted', 'rejected', 'expired']
+    
+    const validStatuses = ['draft', 'sent', 'accepted', 'rejected', 'cancelled']
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { error: 'Neveljaven status' },
