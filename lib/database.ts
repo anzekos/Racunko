@@ -9,7 +9,63 @@ export interface Customer {
   Kraj_postna_st?: string
   email?: string
   ID_DDV?: string
-  // ... ostala polja kot prej
+  Ukrep?: string
+  JR?: string
+  Pogodba?: string
+  VLG?: number
+  VLG_z_DDV?: number
+  Gotovina_1?: number
+  Status_1?: string
+  Racun_izdal_1?: string
+  Opomba_Ponudba?: string
+  Provizija?: number
+  ODL?: number
+  ODL_z_DDV?: number
+  Gotovina_2?: number
+  Status_2?: string
+  Racun_izdal_2?: string
+  Delež_odločba?: number
+  ZAH1?: number
+  ZAH1_z_DDV?: number
+  Gotovina_3?: number
+  Status_3?: string
+  Racun_izdal_3?: string
+  Delež_zah1?: number
+  ZAH2?: number
+  ZAH2_z_DDV?: number
+  Gotovina_4?: number
+  Status_4?: string
+  Racun_izdal_4?: string
+  Delež_zah2?: number
+  ZAH3?: number
+  ZAH3_z_DDV?: number
+  Gotovina_5?: number
+  Status_5?: string
+  Racun_izdal_5?: string
+  Delež_zah3?: number
+  ZAH4?: number
+  ZAH4_z_DDV?: number
+  Gotovina_6?: number
+  Status_6?: string
+  Racun_izdal_6?: string
+  Delež_zah4?: number
+  ZAH5?: number
+  ZAH5_z_DDV?: number
+  Gotovina_7?: number
+  Status_7?: string
+  Racun_izdal_7?: string
+  Delež_zah5?: number
+  Informacije?: string
+  ODL_izplacano?: number
+  ZAH1_izplacano?: number
+  ZAH2_izplacano?: number
+  ZAH3_izplacano?: number
+  ZAH4_izplacano?: number
+  ZAH5_izplacano?: number
+  Izplacano?: number
+  Status_8?: string
+  SKUPAJ?: number
+  KONTROLA?: number
 }
 
 export interface DocumentItem {
