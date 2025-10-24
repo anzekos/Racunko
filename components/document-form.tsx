@@ -1,375 +1,251 @@
+// components/document-form.tsx
 "use client"
-
-import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2, Calculator, Loader2, Copy } from "lucide-react"
-import type { Customer, DocumentItem } from "@/lib/database"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Trash2 } from "lucide-react"
 
-type DocumentType = 'invoice' | 'quote' | 'credit-note'
-
-interface DocumentConfig {
-  numberLabel: string
-  dateLabel: string
-  additionalDateLabel: string
-  additionalDateField: string
-  buttonText: string
-  editingText: string
-  saveAsText: string
+interface Customer {
+  id: number
+  Stranka: string
+  Naslov: string
+  Kraj_postna_st: string
+  email: string
+  ID_DDV: string
 }
 
-interface BaseDocument {
-  id?: string
-  documentNumber: string
-  customer: Customer
-  items: DocumentItem[]
-  serviceDescription: string
-  issueDate: string
-  serviceDate: string
-  totalWithoutVat: number
-  vat: number
-  totalPayable: number
+interface DocumentItem {
+  description: string
+  quantity: number
+  price: number
+  total: number
 }
 
 interface DocumentFormProps {
-  type: DocumentType
-  customers: Customer[]
-  onDocumentCreate: (document: any, isSaveAs?: boolean) => void
-  onSaveAs?: () => void
-  loading: boolean
-  saving?: boolean
-  editingDocument?: any
-  saveAsMode?: boolean
+  type: 'invoice' | 'quote' | 'credit-note' | 'contract'
+  onSubmit: (data: any) => void
+  initialData?: any
 }
 
-const documentConfigs: Record<DocumentType, DocumentConfig> = {
+const documentLabels = {
   invoice: {
-    numberLabel: "Številka računa",
-    dateLabel: "Valuta",
-    additionalDateLabel: "Datum opravljene storitve",
-    additionalDateField: "dueDate",
-    buttonText: "Generiraj račun",
-    editingText: "Urejanje računa",
-    saveAsText: "Shrani račun kot nov"
+    title: 'račun',
+    number: 'Številka računa',
+    new: 'Nov račun',
+    list: 'Vsi računi'
   },
   quote: {
-    numberLabel: "Številka ponudbe",
-    dateLabel: "Veljavna do",
-    additionalDateLabel: "Datum opravljene storitve",
-    additionalDateField: "validUntil",
-    buttonText: "Generiraj ponudbo",
-    editingText: "Urejanje ponudbe",
-    saveAsText: "Shrani ponudbo kot novo"
+    title: 'ponudba',
+    number: 'Številka ponudbe',
+    new: 'Nova ponudba',
+    list: 'Vse ponudbe'
   },
   'credit-note': {
-    numberLabel: "Številka dobropisa",
-    dateLabel: "Izvirni račun",
-    additionalDateLabel: "Datum opravljene storitve",
-    additionalDateField: "originalInvoiceNumber",
-    buttonText: "Generiraj dobropis",
-    editingText: "Urejanje dobropisa",
-    saveAsText: "Shrani dobropis kot nov"
+    title: 'dobropis',
+    number: 'Številka dobropisa',
+    new: 'Nov dobropis',
+    list: 'Vsi dobropisi'
+  },
+  contract: {
+    title: 'pogodba',
+    number: 'Številka pogodbe',
+    new: 'Nova pogodba',
+    list: 'Vse pogodbe'
   }
 }
 
-function CustomerAutocomplete({ customers, onCustomerSelect, selectedCustomer }: {
-  customers: Customer[]
-  onCustomerSelect: (customer: Customer) => void
-  selectedCustomer: Customer | null
-}) {
-  const [query, setQuery] = useState("")
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
+export function DocumentForm({ type, onSubmit, initialData }: DocumentFormProps) {
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [items, setItems] = useState<DocumentItem[]>([
+    { description: '', quantity: 1, price: 0, total: 0 }
+  ])
+  const [formData, setFormData] = useState({
+    documentNumber: '',
+    customerId: '',
+    serviceDescription: '',
+    issueDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    serviceDate: new Date().toISOString().split('T')[0],
+  })
 
   useEffect(() => {
-    if (selectedCustomer) {
-      setQuery(selectedCustomer.Stranka || "")
+    fetchCustomers()
+    if (initialData) {
+      setFormData({
+        documentNumber: initialData.documentNumber,
+        customerId: initialData.customerId,
+        serviceDescription: initialData.serviceDescription,
+        issueDate: initialData.issueDate,
+        dueDate: initialData.dueDate,
+        serviceDate: initialData.serviceDate,
+      })
+      setItems(initialData.items)
     }
-  }, [selectedCustomer])
+  }, [initialData])
 
-  useEffect(() => {
-    if (query.length > 0) {
-      const filtered = customers.filter((customer) =>
-        customer.Stranka?.toLowerCase().includes(query.toLowerCase())
-      )
-      setFilteredCustomers(filtered)
-      setShowSuggestions(true)
-    } else {
-      setFilteredCustomers([])
-      setShowSuggestions(false)
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers')
+      const data = await response.json()
+      setCustomers(data)
+    } catch (error) {
+      console.error('Error fetching customers:', error)
     }
-  }, [query, customers])
-
-  const handleCustomerSelect = (customer: Customer) => {
-    setQuery(customer.Stranka || "")
-    setShowSuggestions(false)
-    onCustomerSelect(customer)
   }
-
-  return (
-    <div className="relative">
-      <Input
-        placeholder="Začnite tipkati ime podjetja..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => query.length > 0 && setShowSuggestions(true)}
-      />
-      {showSuggestions && filteredCustomers.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {filteredCustomers.map((customer) => (
-            <div
-              key={customer.id}
-              className="p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0"
-              onClick={() => handleCustomerSelect(customer)}
-            >
-              <div className="font-medium">{customer.Stranka}</div>
-              <div className="text-sm text-muted-foreground">
-                {customer.Naslov}, {customer.Kraj_postna_st}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-export function DocumentForm({
-  type,
-  customers,
-  onDocumentCreate,
-  onSaveAs,
-  loading,
-  saving,
-  editingDocument,
-  saveAsMode = false
-}: DocumentFormProps) {
-  const config = documentConfigs[type]
-  
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [documentNumber, setDocumentNumber] = useState("")
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0])
-  const [additionalDate, setAdditionalDate] = useState("")
-  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split("T")[0])
-  const [serviceDescription, setServiceDescription] = useState("")
-  const [items, setItems] = useState<DocumentItem[]>([{ description: "", quantity: 1, price: 0, total: 0 }])
-
-  useEffect(() => {
-    if (editingDocument) {
-      setSelectedCustomer(editingDocument.customer)
-      setDocumentNumber(editingDocument[`${type}Number`] || editingDocument.invoiceNumber || editingDocument.quoteNumber || editingDocument.creditNoteNumber)
-      setIssueDate(editingDocument.issueDate)
-      setAdditionalDate(editingDocument.dueDate || editingDocument.validUntil || editingDocument.originalInvoiceNumber || "")
-      setServiceDate(editingDocument.serviceDate)
-      setServiceDescription(editingDocument.serviceDescription)
-      setItems(editingDocument.items.length > 0 ? editingDocument.items : [{ description: "", quantity: 1, price: 0, total: 0 }])
-      
-      if (saveAsMode) {
-        setDocumentNumber("")
-      }
-    }
-  }, [editingDocument, saveAsMode, type])
-
-  useEffect(() => {
-    if (issueDate && type === 'invoice') {
-      const issue = new Date(issueDate)
-      const due = new Date(issue)
-      due.setDate(due.getDate() + 30)
-      setAdditionalDate(due.toISOString().split("T")[0])
-    } else if (issueDate && type === 'quote') {
-      const issue = new Date(issueDate)
-      const valid = new Date(issue)
-      valid.setDate(valid.getDate() + 14)
-      setAdditionalDate(valid.toISOString().split("T")[0])
-    }
-  }, [issueDate, type])
 
   const addItem = () => {
-    setItems([...items, { description: "", quantity: 1, price: 0, total: 0 }])
+    setItems([...items, { description: '', quantity: 1, price: 0, total: 0 }])
   }
 
   const removeItem = (index: number) => {
     if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index))
+      const newItems = items.filter((_, i) => i !== index)
+      setItems(newItems)
     }
   }
 
   const updateItem = (index: number, field: keyof DocumentItem, value: string | number) => {
     const newItems = [...items]
     newItems[index] = { ...newItems[index], [field]: value }
-
-    if (field === "quantity" || field === "price") {
-      newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
+    
+    if (field === 'quantity' || field === 'price') {
+      const quantity = field === 'quantity' ? Number(value) : newItems[index].quantity
+      const price = field === 'price' ? Number(value) : newItems[index].price
+      newItems[index].total = quantity * price
     }
-
+    
     setItems(newItems)
   }
 
-  const totalWithoutVat = items.reduce((sum, item) => sum + item.total, 0)
-  const vat = totalWithoutVat * 0.22
-  const totalPayable = totalWithoutVat + vat
+  const calculateTotals = () => {
+    const totalWithoutVat = items.reduce((sum, item) => sum + item.total, 0)
+    const vat = totalWithoutVat * 0.22
+    const totalPayable = totalWithoutVat + vat
+
+    return { totalWithoutVat, vat, totalPayable }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    const { totalWithoutVat, vat, totalPayable } = calculateTotals()
+    const selectedCustomer = customers.find(c => c.id === parseInt(formData.customerId))
 
-    if (!selectedCustomer || !documentNumber || items.some((item) => !item.description)) {
-      alert("Prosimo, izpolnite vsa obvezna polja")
+    if (!selectedCustomer) {
+      alert('Izberite stranko')
       return
     }
 
-    const document: any = {
-      id: editingDocument?.id,
+    const documentData = {
+      documentNumber: formData.documentNumber,
       customer: selectedCustomer,
-      items: items.filter((item) => item.description.trim() !== ""),
-      serviceDescription,
-      issueDate,
-      serviceDate,
+      items,
+      serviceDescription: formData.serviceDescription,
+      issueDate: formData.issueDate,
+      dueDate: formData.dueDate,
+      serviceDate: formData.serviceDate,
       totalWithoutVat,
       vat,
       totalPayable,
     }
 
-    // Type-specific fields
-    if (type === 'invoice') {
-      document.invoiceNumber = documentNumber
-      document.dueDate = additionalDate
-    } else if (type === 'quote') {
-      document.quoteNumber = documentNumber
-      document.validUntil = additionalDate
-    } else if (type === 'credit-note') {
-      document.creditNoteNumber = documentNumber
-      document.originalInvoiceNumber = additionalDate
-    }
-
-    onDocumentCreate(document, saveAsMode)
+    onSubmit(documentData)
   }
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Nalagam podatke o strankah...</div>
-        </CardContent>
-      </Card>
-    )
-  }
+  const { totalWithoutVat, vat, totalPayable } = calculateTotals()
+  const labels = documentLabels[type]
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Podatki o stranki</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Podjetje *</Label>
-              <CustomerAutocomplete
-                customers={customers}
-                onCustomerSelect={setSelectedCustomer}
-                selectedCustomer={selectedCustomer}
-              />
-            </div>
-
-            {selectedCustomer && (
-              <div className="space-y-2 p-4 bg-muted rounded-lg">
-                <div><strong>Naslov:</strong> {selectedCustomer.Naslov}</div>
-                <div><strong>Kraj:</strong> {selectedCustomer.Kraj_postna_st}</div>
-                <div><strong>E-pošta:</strong> {selectedCustomer.email}</div>
-                <div><strong>ID za DDV:</strong> {selectedCustomer.ID_DDV}</div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Podatki o dokumentu</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="document-number">{config.numberLabel} *</Label>
-              <Input
-                id="document-number"
-                value={documentNumber}
-                onChange={(e) => setDocumentNumber(e.target.value)}
-                placeholder={saveAsMode ? `Vnesite novo številko...` : "npr. 2024-001"}
-                required
-              />
-              {saveAsMode && (
-                <p className="text-sm text-muted-foreground">
-                  Vnesite novo številko za kopijo
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="issue-date">Datum izdaje</Label>
-                <Input
-                  id="issue-date"
-                  type="date"
-                  value={issueDate}
-                  onChange={(e) => setIssueDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="additional-date">{config.dateLabel}</Label>
-                {type === 'credit-note' ? (
-                  <Input
-                    id="additional-date"
-                    value={additionalDate}
-                    onChange={(e) => setAdditionalDate(e.target.value)}
-                    placeholder="Številka izvirnega računa"
-                  />
-                ) : (
-                  <Input
-                    id="additional-date"
-                    type="date"
-                    value={additionalDate}
-                    onChange={(e) => setAdditionalDate(e.target.value)}
-                  />
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="service-date">{config.additionalDateLabel}</Label>
-              <Input
-                id="service-date"
-                type="date"
-                value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Opis storitve</CardTitle>
+          <CardTitle>Osnovni podatki</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Vnesite dodatni opis storitve..."
-            value={serviceDescription}
-            onChange={(e) => setServiceDescription(e.target.value)}
-            rows={3}
-          />
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="documentNumber">{labels.number}</Label>
+              <Input
+                id="documentNumber"
+                value={formData.documentNumber}
+                onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
+                placeholder={`${type.toUpperCase()}-2024-001`}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerId">Stranka</Label>
+              <Select value={formData.customerId} onValueChange={(value) => setFormData({ ...formData, customerId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Izberite stranko" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                      {customer.Stranka}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="serviceDescription">Opis storitve</Label>
+            <Textarea
+              id="serviceDescription"
+              value={formData.serviceDescription}
+              onChange={(e) => setFormData({ ...formData, serviceDescription: e.target.value })}
+              placeholder="Podroben opis storitve..."
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="issueDate">Datum izdaje</Label>
+              <Input
+                id="issueDate"
+                type="date"
+                value={formData.issueDate}
+                onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Rok veljavnosti</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="serviceDate">Datum opravljanja storitve</Label>
+              <Input
+                id="serviceDate"
+                type="date"
+                value={formData.serviceDate}
+                onChange={(e) => setFormData({ ...formData, serviceDate: e.target.value })}
+                required
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex justify-between items-center">
             Postavke
-            <Button type="button" onClick={addItem} size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
+            <Button type="button" onClick={addItem} variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
               Dodaj postavko
             </Button>
           </CardTitle>
@@ -378,44 +254,49 @@ export function DocumentForm({
           <div className="space-y-4">
             {items.map((item, index) => (
               <div key={index} className="grid grid-cols-12 gap-4 items-end">
-                <div className="col-span-5 space-y-2">
-                  <Label>Postavka</Label>
+                <div className="col-span-5">
+                  <Label>Opis</Label>
                   <Input
-                    placeholder="Opis postavke"
                     value={item.description}
-                    onChange={(e) => updateItem(index, "description", e.target.value)}
+                    onChange={(e) => updateItem(index, 'description', e.target.value)}
+                    placeholder="Opis postavke..."
                   />
                 </div>
-                <div className="col-span-2 space-y-2">
+                <div className="col-span-2">
                   <Label>Količina</Label>
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
                     value={item.quantity}
-                    onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
+                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
                   />
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <Label>Cena (EUR)</Label>
+                <div className="col-span-2">
+                  <Label>Cena (€)</Label>
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
                     value={item.price}
-                    onChange={(e) => updateItem(index, "price", Number(e.target.value))}
+                    onChange={(e) => updateItem(index, 'price', e.target.value)}
                   />
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <Label>Skupaj (EUR)</Label>
-                  <Input type="number" value={item.total.toFixed(2)} readOnly className="bg-muted" />
+                <div className="col-span-2">
+                  <Label>Skupaj (€)</Label>
+                  <Input
+                    type="number"
+                    value={item.total.toFixed(2)}
+                    readOnly
+                    className="bg-muted"
+                  />
                 </div>
                 <div className="col-span-1">
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => removeItem(index)}
+                    variant="outline"
+                    size="icon"
                     disabled={items.length === 1}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -424,70 +305,33 @@ export function DocumentForm({
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="mt-6 space-y-2 border-t pt-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Povzetek</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Skupaj brez DDV:</span>
-              <span className="font-medium">{totalWithoutVat.toFixed(2)} EUR</span>
+              <span>Osnova za DDV:</span>
+              <span>{totalWithoutVat.toFixed(2)} €</span>
             </div>
             <div className="flex justify-between">
               <span>DDV (22%):</span>
-              <span className="font-medium">{vat.toFixed(2)} EUR</span>
+              <span>{vat.toFixed(2)} €</span>
             </div>
-            <div className="flex justify-between text-lg font-semibold border-t pt-2">
-              <span>Skupaj za plačilo:</span>
-              <span>{totalPayable.toFixed(2)} EUR</span>
+            <div className="flex justify-between text-lg font-bold">
+              <span>SKUPAJ ZA PLAČILO:</span>
+              <span>{totalPayable.toFixed(2)} €</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex gap-4 pt-6 border-t">
-        <Button type="submit" size="lg" className="gap-2 flex-1" disabled={saving}>
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Shranjujem...
-            </>
-          ) : (
-            <>
-              <Calculator className="h-4 w-4" />
-              {editingDocument
-                ? (saveAsMode ? config.saveAsText : `Posodobi ${type === 'invoice' ? 'račun' : type === 'quote' ? 'ponudbo' : 'dobropis'}`)
-                : config.buttonText
-              }
-            </>
-          )}
-        </Button>
-
-        {editingDocument && !saveAsMode && onSaveAs && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onSaveAs}
-            disabled={saving}
-            className="gap-2"
-            size="lg"
-          >
-            <Copy className="h-4 w-4" />
-            Shrani kot nov
-          </Button>
-        )}
-
-        {saveAsMode && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const baseUrl = type === 'invoice' ? '/invoices' : type === 'quote' ? '/quotes' : '/credit-notes'
-              window.location.href = `${baseUrl}?edit=${editingDocument?.id}`
-            }}
-            disabled={saving}
-            size="lg"
-          >
-            Prekliči
-          </Button>
-        )}
+      <div className="flex gap-4 justify-end">
+        <Button type="submit">Shrani {labels.title}</Button>
       </div>
     </form>
   )
