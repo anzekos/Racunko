@@ -12,8 +12,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { status } = await request.json()
 
-    // Preverimo veljavnost statusa
-    const validStatuses = ['draft', 'sent', 'processed', 'cancelled']
+    const validStatuses = ['draft', 'sent', 'paid', 'cancelled']
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { error: 'Neveljaven status' },
