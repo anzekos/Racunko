@@ -36,7 +36,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       id: creditNote.id.toString(),
       creditNoteNumber: creditNote.credit_note_number,
-      originalInvoiceNumber: creditNote.original_invoice_number,
       customer: {
         id: creditNote.customer_id,
         Stranka: creditNote.Stranka,
@@ -53,6 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       })),
       serviceDescription: creditNote.service_description,
       issueDate: creditNote.issue_date,
+      dueDate: creditNote.due_date,
       serviceDate: creditNote.service_date,
       totalWithoutVat: parseFloat(creditNote.total_without_vat),
       vat: parseFloat(creditNote.vat),
@@ -78,9 +78,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       `UPDATE CreditNotes SET
         credit_note_number = ?,
         customer_id = ?,
-        original_invoice_number = ?,
         service_description = ?,
         issue_date = ?,
+        due_date = ?,
         service_date = ?,
         total_without_vat = ?,
         vat = ?,
@@ -89,9 +89,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       [
         creditNote.creditNoteNumber,
         creditNote.customer.id,
-        creditNote.originalInvoiceNumber || null,
         creditNote.serviceDescription || '',
         creditNote.issueDate,
+        creditNote.dueDate,
         creditNote.serviceDate,
         creditNote.totalWithoutVat,
         creditNote.vat,
