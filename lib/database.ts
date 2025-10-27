@@ -308,3 +308,310 @@ export async function updateCreditNoteStatus(creditNoteId: string, status: strin
   })
   if (!response.ok) throw new Error('Napaka pri posodabljanju statusa dobropisa')
 }
+
+export interface Offer {
+  id?: string
+  offerNumber: string
+  customer: Customer
+  items: InvoiceItem[]
+  serviceDescription: string
+  issueDate: string
+  dueDate: string
+  serviceDate: string
+  totalWithoutVat: number
+  vat: number
+  totalPayable: number
+}
+
+export interface SavedOffer extends Offer {
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'cancelled'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreditNote {
+  id?: string
+  creditNoteNumber: string
+  customer: Customer
+  items: InvoiceItem[]
+  serviceDescription: string
+  issueDate: string
+  dueDate: string
+  serviceDate: string
+  totalWithoutVat: number
+  vat: number
+  totalPayable: number
+}
+
+export interface SavedCreditNote extends CreditNote {
+  status: 'draft' | 'sent' | 'paid' | 'cancelled'
+  createdAt: string
+  updatedAt: string
+}
+
+// Customer functions (obstoječe)
+export async function fetchCustomers(): Promise<Customer[]> {
+  try {
+    const response = await fetch("/api/customers")
+    if (!response.ok) {
+      throw new Error("Failed to fetch customers")
+    }
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching customers:", error)
+    return []
+  }
+}
+
+// Invoice functions (obstoječe)
+export async function saveInvoice(invoice: Invoice): Promise<SavedInvoice> {
+  const response = await fetch('/api/invoices', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(invoice),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri shranjevanju računa')
+  }
+
+  return response.json()
+}
+
+export async function fetchInvoices(): Promise<SavedInvoice[]> {
+  const response = await fetch('/api/invoices')
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju računov')
+  }
+
+  return response.json()
+}
+
+export async function fetchInvoiceById(id: string): Promise<SavedInvoice> {
+  const response = await fetch(`/api/invoices/${id}`)
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju računa')
+  }
+
+  return response.json()
+}
+
+export async function updateInvoice(id: string, invoice: Invoice): Promise<SavedInvoice> {
+  const response = await fetch(`/api/invoices/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(invoice),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri posodabljanju računa')
+  }
+
+  return response.json()
+}
+
+export async function deleteInvoice(id: string): Promise<void> {
+  const response = await fetch(`/api/invoices/${id}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    throw new Error('Napaka pri brisanju računa')
+  }
+}
+
+// Offer functions
+export async function saveOffer(offer: Offer): Promise<SavedOffer> {
+  const response = await fetch('/api/offers', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(offer),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri shranjevanju ponudbe')
+  }
+
+  return response.json()
+}
+
+export async function fetchOffers(): Promise<SavedOffer[]> {
+  const response = await fetch('/api/offers')
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju ponudb')
+  }
+
+  return response.json()
+}
+
+export async function fetchOfferById(id: string): Promise<SavedOffer> {
+  const response = await fetch(`/api/offers/${id}`)
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju ponudbe')
+  }
+
+  return response.json()
+}
+
+export async function updateOffer(id: string, offer: Offer): Promise<SavedOffer> {
+  const response = await fetch(`/api/offers/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(offer),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri posodabljanju ponudbe')
+  }
+
+  return response.json()
+}
+
+export async function deleteOffer(id: string): Promise<void> {
+  const response = await fetch(`/api/offers/${id}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    throw new Error('Napaka pri brisanju ponudbe')
+  }
+}
+
+// Credit Note functions
+export async function saveCreditNote(creditNote: CreditNote): Promise<SavedCreditNote> {
+  const response = await fetch('/api/credit-notes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(creditNote),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri shranjevanju dobropisa')
+  }
+
+  return response.json()
+}
+
+export async function fetchCreditNotes(): Promise<SavedCreditNote[]> {
+  const response = await fetch('/api/credit-notes')
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju dobropisov')
+  }
+
+  return response.json()
+}
+
+export async function fetchCreditNoteById(id: string): Promise<SavedCreditNote> {
+  const response = await fetch(`/api/credit-notes/${id}`)
+  
+  if (!response.ok) {
+    throw new Error('Napaka pri nalaganju dobropisa')
+  }
+
+  return response.json()
+}
+
+export async function updateCreditNote(id: string, creditNote: CreditNote): Promise<SavedCreditNote> {
+  const response = await fetch(`/api/credit-notes/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(creditNote),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Napaka pri posodabljanju dobropisa')
+  }
+
+  return response.json()
+}
+
+export async function deleteCreditNote(id: string): Promise<void> {
+  const response = await fetch(`/api/credit-notes/${id}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    throw new Error('Napaka pri brisanju dobropisa')
+  }
+}
+
+// Status update functions
+export async function updateInvoiceStatus(invoiceId: string, status: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/invoices/${invoiceId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Napaka pri posodabljanju statusa računa')
+    }
+  } catch (error) {
+    console.error('Error updating invoice status:', error)
+    throw error
+  }
+}
+
+export async function updateOfferStatus(offerId: string, status: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/offers/${offerId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Napaka pri posodabljanju statusa ponudbe')
+    }
+  } catch (error) {
+    console.error('Error updating offer status:', error)
+    throw error
+  }
+}
+
+export async function updateCreditNoteStatus(creditNoteId: string, status: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/credit-notes/${creditNoteId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Napaka pri posodabljanju statusa dobropisa')
+    }
+  } catch (error) {
+    console.error('Error updating credit note status:', error)
+    throw error
+  }
+}
