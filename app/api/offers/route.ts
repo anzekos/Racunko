@@ -1,25 +1,19 @@
-// app/api/offers/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db-connection'
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db-connection';
 
 export async function GET() {
   try {
-    const offers = await query(
-      `SELECT 
+    const offers = await query(`
+      SELECT 
         o.*,
         s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
       FROM Offers o
       LEFT JOIN Stranka s ON o.customer_id = s.id
-      ORDER BY o.created_at DESC`
-    )
-
+      ORDER BY o.created_at DESC
+    `);
     const offersWithItems = await Promise.all(
       offers.map(async (offer: any) => {
-        const items = await query(
-          'SELECT * FROM OfferItems WHERE offer_id = ?',
-          [offer.id]
-        )
-
+        const items = await query('SELECT * FROM OfferItems WHERE offer_id = ?', [offer.id]);
         return {
           id: offer.id.toString(),
           offerNumber: offer.offer_number,
@@ -47,36 +41,23 @@ export async function GET() {
           status: offer.status,
           createdAt: offer.created_at,
           updatedAt: offer.updated_at,
-        }
+        };
       })
-    )
-
-    return NextResponse.json(offersWithItems)
+    );
+    return NextResponse.json(offersWithItems);
   } catch (error) {
-    console.error('Napaka pri pridobivanju ponudb:', error)
-    return NextResponse.json(
-      { error: 'Napaka pri pridobivanju ponudb' },
-      { status: 500 }
-    )
+    console.error('Napaka pri pridobivanju ponudb:', error);
+    return NextResponse.json({ error: 'Napaka pri pridobivanju ponudb' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const offer = await request.json()
-
-    const existing = await query(
-      'SELECT id FROM Offers WHERE offer_number = ?',
-      [offer.offerNumber]
-    )
-
+    const offer = await request.json();
+    const existing = await query('SELECT id FROM Offers WHERE offer_number = ?', [offer.offerNumber]);
     if (existing.length > 0) {
-      return NextResponse.json(
-        { error: 'Ponudba s to številko že obstaja' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Ponudba s to številko že obstaja' }, { status: 400 });
     }
-
     const result = await query(
       `INSERT INTO Offers (
         offer_number, customer_id, service_description,
@@ -94,31 +75,25 @@ export async function POST(request: NextRequest) {
         offer.vat,
         offer.totalPayable,
       ]
-    )
-
-    const offerId = result.insertId
-
+    );
+    const offerId = result.insertId;
     for (const item of offer.items) {
       await query(
         `INSERT INTO OfferItems (
           offer_id, description, quantity, price, total
         ) VALUES (?, ?, ?, ?, ?)`,
         [offerId, item.description, item.quantity, item.price, item.total]
-      )
+      );
     }
-
     return NextResponse.json({
       ...offer,
       id: offerId.toString(),
       status: 'draft',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    })
+    });
   } catch (error) {
-    console.error('Napaka pri shranjevanju ponudbe:', error)
-    return NextResponse.json(
-      { error: 'Napaka pri shranjevanju ponudbe' },
-      { status: 500 }
-    )
+    console.error('Napaka pri shranjevanju ponudbe:', error);
+    return NextResponse.json({ error: 'Napaka pri shranjevanju ponudbe' }, { status: 500 });
   }
 }
