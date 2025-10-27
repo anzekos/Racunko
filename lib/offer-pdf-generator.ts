@@ -1,9 +1,8 @@
-// lib/pdf-quote-generator.ts
-import type { SavedQuote } from "./database"
+// lib/offer-pdf-generator.ts
+import type { SavedOffer } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-// Pomožna funkcija za pretvorbo oklch barv v hex/rgb (iste kot za invoice)
 function convertOklchToHex(oklchValue: string): string {
   if (!oklchValue.includes('oklch')) return oklchValue
   if (oklchValue.includes('0.7') && oklchValue.includes('0.05')) return '#934435'
@@ -12,7 +11,6 @@ function convertOklchToHex(oklchValue: string): string {
   return '#000000'
 }
 
-// Pomožna funkcija za normalizacijo CSS barv
 function normalizeColors(element: HTMLElement) {
   const computedStyle = window.getComputedStyle(element)
   
@@ -29,8 +27,7 @@ function normalizeColors(element: HTMLElement) {
   }
 }
 
-// Funkcija za dodajanje footera na dno PDF-ja za ponudbe
-function addFooterToPDF(pdf: jsPDF, quote: SavedQuote) {
+function addFooterToPDF(pdf: jsPDF, offer: SavedOffer) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
@@ -60,23 +57,18 @@ function addFooterToPDF(pdf: jsPDF, quote: SavedQuote) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
-// ENOTNA funkcija za generiranje PDF-ja za ponudbo iz elementa
-export async function generateQuotePDFFromElement(element: HTMLElement, quote: SavedQuote): Promise<Blob> {
+export async function generateOfferPDFFromElement(element: HTMLElement, offer: SavedOffer): Promise<Blob> {
   try {
-    // Skrijemo akcijske gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = 'none'
     })
 
-    // Kloniramo element
     const clonedElement = element.cloneNode(true) as HTMLElement
     
-    // Odstranimo footer elemente, ker jih dodamo ročno v PDF
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
     footerElements.forEach(footer => footer.remove())
     
-    // Ustvarimo začasen div
     const tempDiv = document.createElement('div')
     tempDiv.style.position = 'fixed'
     tempDiv.style.top = '-9999px'
@@ -90,17 +82,14 @@ export async function generateQuotePDFFromElement(element: HTMLElement, quote: S
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
-    // Počakamo, da se vse naloži
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Normaliziramo barve
     const allElements = tempDiv.querySelectorAll('*')
     allElements.forEach(el => {
       const element = el as HTMLElement
       normalizeColors(element)
     })
 
-    // Ustvarimo canvas
     const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -118,13 +107,11 @@ export async function generateQuotePDFFromElement(element: HTMLElement, quote: S
       }
     })
 
-    // Počistimo
     document.body.removeChild(tempDiv)
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = ''
     })
 
-    // Ustvarimo PDF
     const imgData = canvas.toDataURL('image/png', 1.0)
     const pdf = new jsPDF('p', 'mm', 'a4')
     
@@ -148,8 +135,7 @@ export async function generateQuotePDFFromElement(element: HTMLElement, quote: S
       pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
     }
 
-    // Dodamo footer
-    addFooterToPDF(pdf, quote)
+    addFooterToPDF(pdf, offer)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
   } catch (error) {
@@ -161,15 +147,15 @@ export async function generateQuotePDFFromElement(element: HTMLElement, quote: S
   }
 }
 
-export function downloadQuotePDF(quote: SavedQuote, previewElementId: string = 'quote-preview-content') {
-  const filename = `ponudba-${quote.quoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
+  const filename = `ponudba-${offer.offerNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
     throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
   }
 
-  generateQuotePDFFromElement(element, quote)
+  generateOfferPDFFromElement(element, offer)
     .then((pdfBlob) => {
       const url = URL.createObjectURL(pdfBlob)
       const a = document.createElement("a")
@@ -184,4 +170,8 @@ export function downloadQuotePDF(quote: SavedQuote, previewElementId: string = '
       console.error('Napaka pri generiranju PDF-ja:', error)
       alert('Napaka pri generiranju PDF-ja: ' + error.message)
     })
+}
+
+export function downloadOfferPDF(offer: SavedOffer) {
+  downloadOfferPDFFromPreview(offer)
 }
