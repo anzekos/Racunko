@@ -1,4 +1,4 @@
-// components/sidebar.tsx
+// components/sidebar.tsx - dodajte te elemente v menuItems
 "use client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -18,7 +18,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const menuItems = [
     { icon: Home, label: "Domov", href: "/", active: pathname === "/" },
     { icon: Users, label: "Stranke", href: "/customers", active: pathname === "/customers" },
-    
     // Računi
     { 
       icon: FileText, 
@@ -32,7 +31,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       href: "/invoices/list", 
       active: pathname.includes("/invoices/list") 
     },
-    
     // Ponudbe
     { 
       icon: TrendingUp, 
@@ -46,7 +44,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       href: "/offers/list", 
       active: pathname.includes("/offers/list") 
     },
-    
     // Dobropisi
     { 
       icon: Receipt, 
