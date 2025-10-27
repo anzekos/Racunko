@@ -2,30 +2,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db-connection'
 
-// GET - pridobi vse dobropise
 export async function GET() {
   try {
-    const creditNotes = await query(`
-      SELECT 
+    const creditNotes = await query(
+      `SELECT 
         cn.*,
         s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
       FROM CreditNotes cn
       LEFT JOIN Stranka s ON cn.customer_id = s.id
-      ORDER BY cn.created_at DESC
-    `)
+      ORDER BY cn.created_at DESC`
+    )
 
-    // Pridobi postavke za vsak dobropis
     const creditNotesWithItems = await Promise.all(
       creditNotes.map(async (creditNote: any) => {
         const items = await query(
           'SELECT * FROM CreditNoteItems WHERE credit_note_id = ?',
           [creditNote.id]
         )
-        
+
         return {
           id: creditNote.id.toString(),
           creditNoteNumber: creditNote.credit_note_number,
-          originalInvoiceNumber: creditNote.original_invoice_number,
           customer: {
             id: creditNote.customer_id,
             Stranka: creditNote.Stranka,
@@ -42,6 +39,7 @@ export async function GET() {
           })),
           serviceDescription: creditNote.service_description,
           issueDate: creditNote.issue_date,
+          dueDate: creditNote.due_date,
           serviceDate: creditNote.service_date,
           totalWithoutVat: parseFloat(creditNote.total_without_vat),
           vat: parseFloat(creditNote.vat),
@@ -63,12 +61,10 @@ export async function GET() {
   }
 }
 
-// POST - ustvari nov dobropis
 export async function POST(request: NextRequest) {
   try {
     const creditNote = await request.json()
 
-    // Preveri ali dobropis s to številko že obstaja
     const existing = await query(
       'SELECT id FROM CreditNotes WHERE credit_note_number = ?',
       [creditNote.creditNoteNumber]
@@ -81,19 +77,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vstavi dobropis
     const result = await query(
       `INSERT INTO CreditNotes (
-        credit_note_number, customer_id, original_invoice_number, service_description,
-        issue_date, service_date,
+        credit_note_number, customer_id, service_description,
+        issue_date, due_date, service_date,
         total_without_vat, vat, total_payable, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
       [
         creditNote.creditNoteNumber,
         creditNote.customer.id,
-        creditNote.originalInvoiceNumber || null,
         creditNote.serviceDescription || '',
         creditNote.issueDate,
+        creditNote.dueDate,
         creditNote.serviceDate,
         creditNote.totalWithoutVat,
         creditNote.vat,
@@ -103,7 +98,6 @@ export async function POST(request: NextRequest) {
 
     const creditNoteId = result.insertId
 
-    // Vstavi postavke
     for (const item of creditNote.items) {
       await query(
         `INSERT INTO CreditNoteItems (
