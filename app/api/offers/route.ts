@@ -1,332 +1,124 @@
-// app/quotes/page.tsx
-"use client"
-import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Plus, Trash2, Download, Send } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+// app/api/offers/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { query } from '@/lib/db-connection'
 
-interface Customer {
-  id: number
-  Stranka: string
-  Naslov: string
-  Kraj_postna_st: string
-  email: string
-  ID_DDV: string
-}
+export async function GET() {
+  try {
+    const offers = await query(
+      `SELECT 
+        o.*,
+        s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
+      FROM Offers o
+      LEFT JOIN Stranka s ON o.customer_id = s.id
+      ORDER BY o.created_at DESC`
+    )
 
-interface QuoteItem {
-  description: string
-  quantity: number
-  price: number
-  total: number
-}
+    const offersWithItems = await Promise.all(
+      offers.map(async (offer: any) => {
+        const items = await query(
+          'SELECT * FROM OfferItems WHERE offer_id = ?',
+          [offer.id]
+        )
 
-export default function NewQuotePage() {
-  const router = useRouter()
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [items, setItems] = useState<QuoteItem[]>([
-    { description: '', quantity: 1, price: 0, total: 0 }
-  ])
-  const [formData, setFormData] = useState({
-    quoteNumber: '',
-    customerId: '',
-    serviceDescription: '',
-    issueDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    serviceDate: new Date().toISOString().split('T')[0],
-  })
-
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
-
-  const fetchCustomers = async () => {
-    try {
-      const response = await fetch('/api/customers')
-      const data = await response.json()
-      setCustomers(data)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-    }
-  }
-
-  const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, price: 0, total: 0 }])
-  }
-
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      const newItems = items.filter((_, i) => i !== index)
-      setItems(newItems)
-    }
-  }
-
-  const updateItem = (index: number, field: keyof QuoteItem, value: string | number) => {
-    const newItems = [...items]
-    newItems[index] = { ...newItems[index], [field]: value }
-    
-    if (field === 'quantity' || field === 'price') {
-      const quantity = field === 'quantity' ? Number(value) : newItems[index].quantity
-      const price = field === 'price' ? Number(value) : newItems[index].price
-      newItems[index].total = quantity * price
-    }
-    
-    setItems(newItems)
-  }
-
-  const calculateTotals = () => {
-    const totalWithoutVat = items.reduce((sum, item) => sum + item.total, 0)
-    const vat = totalWithoutVat * 0.22 // 22% DDV
-    const totalPayable = totalWithoutVat + vat
-
-    return { totalWithoutVat, vat, totalPayable }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    const { totalWithoutVat, vat, totalPayable } = calculateTotals()
-    const selectedCustomer = customers.find(c => c.id === parseInt(formData.customerId))
-
-    if (!selectedCustomer) {
-      alert('Izberite stranko')
-      return
-    }
-
-    const quoteData = {
-      quoteNumber: formData.quoteNumber,
-      customer: selectedCustomer,
-      items,
-      serviceDescription: formData.serviceDescription,
-      issueDate: formData.issueDate,
-      dueDate: formData.dueDate,
-      serviceDate: formData.serviceDate,
-      totalWithoutVat,
-      vat,
-      totalPayable,
-    }
-
-    try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(quoteData),
+        return {
+          id: offer.id.toString(),
+          offerNumber: offer.offer_number,
+          customer: {
+            id: offer.customer_id,
+            Stranka: offer.Stranka,
+            Naslov: offer.Naslov,
+            Kraj_postna_st: offer.Kraj_postna_st,
+            email: offer.email,
+            ID_DDV: offer.ID_DDV,
+          },
+          items: items.map((item: any) => ({
+            description: item.description,
+            quantity: parseFloat(item.quantity),
+            price: parseFloat(item.price),
+            total: parseFloat(item.total),
+          })),
+          serviceDescription: offer.service_description,
+          issueDate: offer.issue_date,
+          dueDate: offer.due_date,
+          serviceDate: offer.service_date,
+          totalWithoutVat: parseFloat(offer.total_without_vat),
+          vat: parseFloat(offer.vat),
+          totalPayable: parseFloat(offer.total_payable),
+          status: offer.status,
+          createdAt: offer.created_at,
+          updatedAt: offer.updated_at,
+        }
       })
+    )
 
-      if (response.ok) {
-        const savedQuote = await response.json()
-        router.push(`/quotes/view/${savedQuote.id}`)
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Napaka pri shranjevanju ponudbe')
-      }
-    } catch (error) {
-      console.error('Error saving quote:', error)
-      alert('Napaka pri shranjevanju ponudbe')
-    }
+    return NextResponse.json(offersWithItems)
+  } catch (error) {
+    console.error('Napaka pri pridobivanju ponudb:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri pridobivanju ponudb' },
+      { status: 500 }
+    )
   }
+}
 
-  const { totalWithoutVat, vat, totalPayable } = calculateTotals()
+export async function POST(request: NextRequest) {
+  try {
+    const offer = await request.json()
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/">
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold">Nova ponudba</h1>
-          <p className="text-muted-foreground">Ustvarite novo ponudbo za stranko</p>
-        </div>
-      </div>
+    const existing = await query(
+      'SELECT id FROM Offers WHERE offer_number = ?',
+      [offer.offerNumber]
+    )
 
-      <form onSubmit={handleSubmit} className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Osnovni podatki</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="quoteNumber">Številka ponudbe</Label>
-                <Input
-                  id="quoteNumber"
-                  value={formData.quoteNumber}
-                  onChange={(e) => setFormData({ ...formData, quoteNumber: e.target.value })}
-                  placeholder="PON-2024-001"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customerId">Stranka</Label>
-                <Select value={formData.customerId} onValueChange={(value) => setFormData({ ...formData, customerId: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Izberite stranko" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.Stranka}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { error: 'Ponudba s to številko že obstaja' },
+        { status: 400 }
+      )
+    }
 
-            <div className="space-y-2">
-              <Label htmlFor="serviceDescription">Opis storitve</Label>
-              <Textarea
-                id="serviceDescription"
-                value={formData.serviceDescription}
-                onChange={(e) => setFormData({ ...formData, serviceDescription: e.target.value })}
-                placeholder="Podroben opis storitve..."
-                rows={3}
-              />
-            </div>
+    const result = await query(
+      `INSERT INTO Offers (
+        offer_number, customer_id, service_description,
+        issue_date, due_date, service_date,
+        total_without_vat, vat, total_payable, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+      [
+        offer.offerNumber,
+        offer.customer.id,
+        offer.serviceDescription || '',
+        offer.issueDate,
+        offer.dueDate,
+        offer.serviceDate,
+        offer.totalWithoutVat,
+        offer.vat,
+        offer.totalPayable,
+      ]
+    )
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="issueDate">Datum izdaje</Label>
-                <Input
-                  id="issueDate"
-                  type="date"
-                  value={formData.issueDate}
-                  onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Rok veljavnosti</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="serviceDate">Datum opravljanja storitve</Label>
-                <Input
-                  id="serviceDate"
-                  type="date"
-                  value={formData.serviceDate}
-                  onChange={(e) => setFormData({ ...formData, serviceDate: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    const offerId = result.insertId
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              Postavke
-              <Button type="button" onClick={addItem} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Dodaj postavko
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-4 items-end">
-                  <div className="col-span-5">
-                    <Label>Opis</Label>
-                    <Input
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      placeholder="Opis postavke..."
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Količina</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Cena (€)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.price}
-                      onChange={(e) => updateItem(index, 'price', e.target.value)}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Skupaj (€)</Label>
-                    <Input
-                      type="number"
-                      value={item.total.toFixed(2)}
-                      readOnly
-                      className="bg-muted"
-                    />
-                  </div>
-                  <div className="col-span-1">
-                    <Button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      variant="outline"
-                      size="icon"
-                      disabled={items.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+    for (const item of offer.items) {
+      await query(
+        `INSERT INTO OfferItems (
+          offer_id, description, quantity, price, total
+        ) VALUES (?, ?, ?, ?, ?)`,
+        [offerId, item.description, item.quantity, item.price, item.total]
+      )
+    }
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Povzetek</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Osnova za DDV:</span>
-                <span>{totalWithoutVat.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between">
-                <span>DDV (22%):</span>
-                <span>{vat.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold">
-                <span>SKUPAJ ZA PLAČILO:</span>
-                <span>{totalPayable.toFixed(2)} €</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex gap-4 justify-end">
-          <Button type="button" variant="outline" asChild>
-            <Link href="/">Prekliči</Link>
-          </Button>
-          <Button type="submit">Shrani ponudbo</Button>
-        </div>
-      </form>
-    </div>
-  )
+    return NextResponse.json({
+      ...offer,
+      id: offerId.toString(),
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Napaka pri shranjevanju ponudbe:', error)
+    return NextResponse.json(
+      { error: 'Napaka pri shranjevanju ponudbe' },
+      { status: 500 }
+    )
+  }
 }
