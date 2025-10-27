@@ -2,7 +2,7 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks, Quote, Receipt, FileSignature } from "lucide-react"
+import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks, TrendingUp, Receipt } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
@@ -18,45 +18,47 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const menuItems = [
     { icon: Home, label: "Domov", href: "/", active: pathname === "/" },
     { icon: Users, label: "Stranke", href: "/customers", active: pathname === "/customers" },
+    
+    // Računi
     { 
       icon: FileText, 
-      label: "Računi", 
-      href: "/invoices",
-      active: pathname.includes('/invoices') && !pathname.includes('/list'),
-      submenu: [
-        { label: "Nov račun", href: "/invoices" },
-        { label: "Vsi računi", href: "/invoices/list" }
-      ]
+      label: "Nov račun", 
+      href: "/invoices", 
+      active: pathname === "/invoices" && !pathname.includes("/list") 
     },
     { 
-      icon: Quote, 
-      label: "Ponudbe", 
-      href: "/quotes",
-      active: pathname.includes('/quotes') && !pathname.includes('/list'),
-      submenu: [
-        { label: "Nova ponudba", href: "/quotes" },
-        { label: "Vse ponudbe", href: "/quotes/list" }
-      ]
+      icon: ListChecks, 
+      label: "Vsi računi", 
+      href: "/invoices/list", 
+      active: pathname.includes("/invoices/list") 
     },
+    
+    // Ponudbe
+    { 
+      icon: TrendingUp, 
+      label: "Nova ponudba", 
+      href: "/offers", 
+      active: pathname === "/offers" && !pathname.includes("/list") 
+    },
+    { 
+      icon: ListChecks, 
+      label: "Vse ponudbe", 
+      href: "/offers/list", 
+      active: pathname.includes("/offers/list") 
+    },
+    
+    // Dobropisi
     { 
       icon: Receipt, 
-      label: "Dobropisi", 
-      href: "/credit-notes",
-      active: pathname.includes('/credit-notes') && !pathname.includes('/list'),
-      submenu: [
-        { label: "Nov dobropis", href: "/credit-notes" },
-        { label: "Vsi dobropisi", href: "/credit-notes/list" }
-      ]
+      label: "Nov dobropis", 
+      href: "/credit-notes", 
+      active: pathname === "/credit-notes" && !pathname.includes("/list") 
     },
     { 
-      icon: FileSignature, 
-      label: "Pogodbe", 
-      href: "/contracts",
-      active: pathname.includes('/contracts') && !pathname.includes('/list'),
-      submenu: [
-        { label: "Nova pogodba", href: "/contracts" },
-        { label: "Vse pogodbe", href: "/contracts/list" }
-      ]
+      icon: ListChecks, 
+      label: "Vsi dobropisi", 
+      href: "/credit-notes/list", 
+      active: pathname.includes("/credit-notes/list") 
     },
   ]
 
@@ -82,39 +84,19 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </Button>
         </div>
       </div>
-      
       <nav className="p-2">
         {menuItems.map((item, index) => (
-          <div key={index} className="mb-1">
-            <Link href={item.href} passHref>
-              <Button
-                variant={item.active ? "secondary" : "ghost"}
-                className={cn("w-full justify-start gap-3", collapsed && "justify-center px-2")}
-              >
-                <item.icon className="h-4 w-4" />
-                {!collapsed && <span>{item.label}</span>}
-              </Button>
-            </Link>
-            
-            {/* Submenu items */}
-            {!collapsed && item.submenu && (
-              <div className="ml-6 mt-1 space-y-1">
-                {item.submenu.map((subItem, subIndex) => (
-                  <Link key={subIndex} href={subItem.href} passHref>
-                    <Button
-                      variant={pathname === subItem.href ? "secondary" : "ghost"}
-                      className="w-full justify-start text-xs h-8"
-                    >
-                      {subItem.label}
-                    </Button>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          <Link key={index} href={item.href} passHref>
+            <Button
+              variant={item.active ? "secondary" : "ghost"}
+              className={cn("w-full justify-start gap-3 mb-1", collapsed && "justify-center px-2")}
+            >
+              <item.icon className="h-4 w-4" />
+              {!collapsed && <span>{item.label}</span>}
+            </Button>
+          </Link>
         ))}
       </nav>
-
       {!collapsed && (
         <div className="absolute bottom-4 left-4 right-4">
           <div className="text-xs text-muted-foreground text-center space-y-1">
