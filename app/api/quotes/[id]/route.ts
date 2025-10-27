@@ -1,4 +1,4 @@
-// app/api/quotes/[id]/route.ts
+// app/api/offers/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db-connection'
 
@@ -10,39 +10,39 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const quotes = await query(
+    const offers = await query(
       `SELECT 
-        q.*,
+        o.*,
         s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
-      FROM Quotes q
-      LEFT JOIN Stranka s ON q.customer_id = s.id
-      WHERE q.id = ?`,
+      FROM Offers o
+      LEFT JOIN Stranka s ON o.customer_id = s.id
+      WHERE o.id = ?`,
       [params.id]
     )
 
-    if (quotes.length === 0) {
+    if (offers.length === 0) {
       return NextResponse.json(
         { error: 'Ponudba ni najdena' },
         { status: 404 }
       )
     }
 
-    const quote = quotes[0]
+    const offer = offers[0]
     const items = await query(
-      'SELECT * FROM QuoteItems WHERE quote_id = ?',
+      'SELECT * FROM OfferItems WHERE offer_id = ?',
       [params.id]
     )
 
     return NextResponse.json({
-      id: quote.id.toString(),
-      quoteNumber: quote.quote_number,
+      id: offer.id.toString(),
+      offerNumber: offer.offer_number,
       customer: {
-        id: quote.customer_id,
-        Stranka: quote.Stranka,
-        Naslov: quote.Naslov,
-        Kraj_postna_st: quote.Kraj_postna_st,
-        email: quote.email,
-        ID_DDV: quote.ID_DDV,
+        id: offer.customer_id,
+        Stranka: offer.Stranka,
+        Naslov: offer.Naslov,
+        Kraj_postna_st: offer.Kraj_postna_st,
+        email: offer.email,
+        ID_DDV: offer.ID_DDV,
       },
       items: items.map((item: any) => ({
         description: item.description,
@@ -50,16 +50,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         price: parseFloat(item.price),
         total: parseFloat(item.total),
       })),
-      serviceDescription: quote.service_description,
-      issueDate: quote.issue_date,
-      dueDate: quote.due_date,
-      serviceDate: quote.service_date,
-      totalWithoutVat: parseFloat(quote.total_without_vat),
-      vat: parseFloat(quote.vat),
-      totalPayable: parseFloat(quote.total_payable),
-      status: quote.status,
-      createdAt: quote.created_at,
-      updatedAt: quote.updated_at,
+      serviceDescription: offer.service_description,
+      issueDate: offer.issue_date,
+      dueDate: offer.due_date,
+      serviceDate: offer.service_date,
+      totalWithoutVat: parseFloat(offer.total_without_vat),
+      vat: parseFloat(offer.vat),
+      totalPayable: parseFloat(offer.total_payable),
+      status: offer.status,
+      createdAt: offer.created_at,
+      updatedAt: offer.updated_at,
     })
   } catch (error) {
     console.error('Napaka pri pridobivanju ponudbe:', error)
@@ -72,11 +72,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const quote = await request.json()
+    const offer = await request.json()
 
     await query(
-      `UPDATE Quotes SET
-        quote_number = ?,
+      `UPDATE Offers SET
+        offer_number = ?,
         customer_id = ?,
         service_description = ?,
         issue_date = ?,
@@ -87,32 +87,32 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         total_payable = ?
       WHERE id = ?`,
       [
-        quote.quoteNumber,
-        quote.customer.id,
-        quote.serviceDescription || '',
-        quote.issueDate,
-        quote.dueDate,
-        quote.serviceDate,
-        quote.totalWithoutVat,
-        quote.vat,
-        quote.totalPayable,
+        offer.offerNumber,
+        offer.customer.id,
+        offer.serviceDescription || '',
+        offer.issueDate,
+        offer.dueDate,
+        offer.serviceDate,
+        offer.totalWithoutVat,
+        offer.vat,
+        offer.totalPayable,
         params.id,
       ]
     )
 
-    await query('DELETE FROM QuoteItems WHERE quote_id = ?', [params.id])
+    await query('DELETE FROM OfferItems WHERE offer_id = ?', [params.id])
 
-    for (const item of quote.items) {
+    for (const item of offer.items) {
       await query(
-        `INSERT INTO QuoteItems (
-          quote_id, description, quantity, price, total
+        `INSERT INTO OfferItems (
+          offer_id, description, quantity, price, total
         ) VALUES (?, ?, ?, ?, ?)`,
         [params.id, item.description, item.quantity, item.price, item.total]
       )
     }
 
     return NextResponse.json({
-      ...quote,
+      ...offer,
       id: params.id,
       updatedAt: new Date().toISOString(),
     })
@@ -127,7 +127,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    await query('DELETE FROM Quotes WHERE id = ?', [params.id])
+    await query('DELETE FROM Offers WHERE id = ?', [params.id])
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Napaka pri brisanju ponudbe:', error)
