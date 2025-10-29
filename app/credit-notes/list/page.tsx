@@ -24,7 +24,7 @@ import {
   Receipt
 } from "lucide-react"
 import { fetchCreditNotes, deleteCreditNote, updateCreditNoteStatus, type SavedCreditNote } from "@/lib/database"
-import { generateCreditNotePDFFromElement } from "@/lib/pdf-generator"
+import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
