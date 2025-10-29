@@ -1,24 +1,17 @@
+// app/credit-notes/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { DocumentForm } from "@/components/document-form"
+import { CreditNoteForm } from "@/components/credit-note-form"
 import { CreditNotePreview } from "@/components/credit-note-preview"
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { FileMinus, ArrowLeft } from "lucide-react"
-import { 
-  fetchCustomers, 
-  fetchCreditNotes, 
-  saveCreditNote, 
-  updateCreditNote, 
-  type Customer, 
-  type CreditNote, 
-  type SavedCreditNote 
-} from "@/lib/database"
+import { FileText, ArrowLeft, Copy, Receipt } from "lucide-react"
+import { fetchCustomers, fetchCreditNotes, saveCreditNote, updateCreditNote, type Customer, type CreditNote, type SavedCreditNote } from "@/lib/database"
 import { downloadCreditNotePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import { Suspense } from "react"
@@ -41,13 +34,8 @@ function CreditNotesPageContent() {
 
   useEffect(() => {
     const editId = searchParams.get('edit')
-    const saveAsParam = searchParams.get('saveAs')
-    
     if (editId) {
       loadCreditNoteForEdit(editId)
-      if (saveAsParam === 'true') {
-        setSaveAsMode(true)
-      }
     }
   }, [searchParams])
 
@@ -70,7 +58,7 @@ function CreditNotesPageContent() {
   const loadCreditNoteForEdit = async (id: string) => {
     try {
       const creditNotes = await fetchCreditNotes()
-      const found = creditNotes.find(cn => cn.id === id)
+      const found = creditNotes.find(creditNote => creditNote.id === id)
       if (found) {
         setEditingCreditNote(found)
         setSaveAsMode(false)
@@ -85,7 +73,9 @@ function CreditNotesPageContent() {
       setSaving(true)
       
       if (isSaveAs || saveAsMode) {
-        const saved = await saveCreditNote(creditNoteData)
+        const saved = await saveCreditNote({
+          ...creditNoteData,
+        })
         setCurrentCreditNote(saved)
         setCreditNoteCount(prev => prev + 1)
         setSaveAsMode(false)
@@ -111,6 +101,18 @@ function CreditNotesPageContent() {
   const handleSaveAs = () => {
     setSaveAsMode(true)
   }
+
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    const saveAsParam = searchParams.get('saveAs')
+    
+    if (editId) {
+      loadCreditNoteForEdit(editId)
+      if (saveAsParam === 'true') {
+        setSaveAsMode(true)
+      }
+    }
+  }, [searchParams])
 
   const handleBackToForm = () => {
     setShowPreview(false)
@@ -171,7 +173,7 @@ function CreditNotesPageContent() {
                                 ? `Ustvarjate nov dobropis na podlagi dobropisa št. ${editingCreditNote.creditNoteNumber}`
                                 : `Urejate dobropis št. ${editingCreditNote.creditNoteNumber}`
                               )
-                            : "Ustvarite dobropise za vračila ali popravke računov"
+                            : "Ustvarite profesionalne dobropise z avtomatskim izračunom DDV"
                           }
                         </p>
                       </div>
@@ -179,7 +181,7 @@ function CreditNotesPageContent() {
                         <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/10 rounded-lg">
-                              <FileMinus className="h-5 w-5 text-primary" />
+                              <Receipt className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                               <p className="text-sm text-muted-foreground">Aktivni dobropisi</p>
@@ -190,14 +192,13 @@ function CreditNotesPageContent() {
                       </Link>
                     </div>
 
-                    <DocumentForm 
-                      type="credit-note"
+                    <CreditNoteForm 
                       customers={customers} 
-                      onDocumentCreate={handleCreditNoteCreate} 
+                      onCreditNoteCreate={handleCreditNoteCreate} 
                       onSaveAs={handleSaveAs}
                       loading={loading}
                       saving={saving}
-                      editingDocument={editingCreditNote}
+                      editingCreditNote={editingCreditNote}
                       saveAsMode={saveAsMode}
                     />
                   </>
