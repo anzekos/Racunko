@@ -1,4 +1,4 @@
-// lib/database.ts - POPRAVLJENA VERZIJA
+// lib/database.ts - popolna implementacija
 import { query } from './db-connection'
 
 export interface Customer {
@@ -134,7 +134,7 @@ export interface SavedCreditNote extends CreditNote {
   updatedAt: string
 }
 
-// Customer API functions - SAMO ENA DEFINICIJA
+// Customer API functions
 export async function fetchCustomers(): Promise<Customer[]> {
   try {
     const response = await fetch("/api/customers")
