@@ -192,15 +192,6 @@ export function OfferForm({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="service-date">Predviden datum storitve</Label>
-              <Input
-                id="service-date"
-                type="date"
-                value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>
