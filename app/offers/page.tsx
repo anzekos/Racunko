@@ -102,6 +102,18 @@ function OffersPageContent() {
     setSaveAsMode(true)
   }
 
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    const saveAsParam = searchParams.get('saveAs')
+    
+    if (editId) {
+      loadOfferForEdit(editId)
+      if (saveAsParam === 'true') {
+        setSaveAsMode(true)
+      }
+    }
+  }, [searchParams])
+
   const handleBackToForm = () => {
     setShowPreview(false)
     setCurrentOffer(null)
