@@ -1,6 +1,15 @@
 // lib/database.ts - popolna implementacija
 import { query } from './db-connection'
 
+export type SavedOffer = SavedInvoice & { 
+  offerNumber: string 
+}
+
+export type SavedCreditNote = SavedInvoice & { 
+  creditNoteNumber: string 
+}
+
+
 export interface Customer {
   id?: number
   Stranka?: string
