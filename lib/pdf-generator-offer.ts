@@ -1,8 +1,11 @@
-// lib/offer-pdf-generator.ts
-import type { SavedOffer } from "./database"
+import type { SavedInvoice } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
+// Type za Offer (ima offerNumber namesto invoiceNumber)
+type SavedOffer = SavedInvoice & { offerNumber: string }
+
+// Pomožna funkcija za pretvorbo oklch barv v hex/rgb
 function convertOklchToHex(oklchValue: string): string {
   if (!oklchValue.includes('oklch')) return oklchValue
   if (oklchValue.includes('0.7') && oklchValue.includes('0.05')) return '#934435'
@@ -11,6 +14,7 @@ function convertOklchToHex(oklchValue: string): string {
   return '#000000'
 }
 
+// Pomožna funkcija za normalizacijo CSS barv
 function normalizeColors(element: HTMLElement) {
   const computedStyle = window.getComputedStyle(element)
   
@@ -27,6 +31,7 @@ function normalizeColors(element: HTMLElement) {
   }
 }
 
+// Funkcija za dodajanje footera na dno PDF-ja
 function addFooterToPDF(pdf: jsPDF, offer: SavedOffer) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
@@ -47,7 +52,7 @@ function addFooterToPDF(pdf: jsPDF, offer: SavedOffer) {
   
   const textOffset = 10;
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setTextColor(147, 68, 53);
   pdf.setFont('helvetica', 'bold');
   pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin - textOffset, footerY - 14, { align: 'right' });
@@ -57,18 +62,23 @@ function addFooterToPDF(pdf: jsPDF, offer: SavedOffer) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
+// Funkcija za generiranje PDF-ja iz elementa
 export async function generateOfferPDFFromElement(element: HTMLElement, offer: SavedOffer): Promise<Blob> {
   try {
+    // Skrijemo akcijske gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = 'none'
     })
 
+    // Kloniramo element
     const clonedElement = element.cloneNode(true) as HTMLElement
     
+    // Odstranimo footer elemente, ker jih dodamo ročno v PDF
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
     footerElements.forEach(footer => footer.remove())
     
+    // Ustvarimo začasen div
     const tempDiv = document.createElement('div')
     tempDiv.style.position = 'fixed'
     tempDiv.style.top = '-9999px'
@@ -77,27 +87,32 @@ export async function generateOfferPDFFromElement(element: HTMLElement, offer: S
     tempDiv.style.overflow = 'visible'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '12pt'
+    tempDiv.style.fontSize = '9pt'
     tempDiv.style.padding = '0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
+    // Počakamo, da se vse naloži
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    // Normaliziramo barve
     const allElements = tempDiv.querySelectorAll('*')
     allElements.forEach(el => {
       const element = el as HTMLElement
       normalizeColors(element)
     })
 
+    // Renderanje z html2canvas
     const canvas = await html2canvas(tempDiv, {
-      scale: 2,
+      scale: 2.0,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
       width: tempDiv.scrollWidth,
       height: tempDiv.scrollHeight,
+      imageTimeout: 0,
+      removeContainer: true,
       onclone: (clonedDoc) => {
         const clonedElements = clonedDoc.querySelectorAll('*')
         clonedElements.forEach(el => {
@@ -107,13 +122,17 @@ export async function generateOfferPDFFromElement(element: HTMLElement, offer: S
       }
     })
 
+    // Počistimo
     document.body.removeChild(tempDiv)
     actionButtons.forEach(btn => {
       (btn as HTMLElement).style.display = ''
     })
 
-    const imgData = canvas.toDataURL('image/png', 1.0)
-    const pdf = new jsPDF('p', 'mm', 'a4')
+    // PNG z optimizirano kompresijo
+    const imgData = canvas.toDataURL('image/png')
+    const compressedImgData = await compressPNG(imgData, 0.95)
+    
+    const pdf = new jsPDF('p', 'mm', 'a4', true)
     
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
@@ -126,15 +145,16 @@ export async function generateOfferPDFFromElement(element: HTMLElement, offer: S
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
-      pdf.addImage(imgData, 'PNG', margin, topMargin, imgWidth, imgHeight)
+      pdf.addImage(compressedImgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
     } else {
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
       
-      pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
+      pdf.addImage(compressedImgData, 'JPEG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
     }
 
+    // Dodamo footer
     addFooterToPDF(pdf, offer)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
@@ -147,8 +167,33 @@ export async function generateOfferPDFFromElement(element: HTMLElement, offer: S
   }
 }
 
+// Pomožna funkcija za kompresijo PNG
+async function compressPNG(dataUrl: string, quality: number): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      
+      const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, 0, 0)
+      
+      const compressed = canvas.toDataURL('image/jpeg', quality)
+      resolve(compressed)
+    }
+    img.src = dataUrl
+  })
+}
+
+// Funkcija za prenos PDF-ja
 export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
-  const filename = `ponudba-${offer.offerNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+  // Default ime PDF: "Ime stranke + št. ponudbe"
+  const customerName = offer.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
+  const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  const filename = `${customerName}-ponudba-${offerNum}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
@@ -172,6 +217,7 @@ export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId:
     })
 }
 
+// Alias funkcija za kompatibilnost
 export function downloadOfferPDF(offer: SavedOffer) {
-  downloadOfferPDFFromPreview(offer)
+  downloadOfferPDFFromPreview(offer, 'offer-preview-content')
 }
