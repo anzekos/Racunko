@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Download, Mail, Printer } from "lucide-react"
 import type { Invoice } from "@/lib/database"
 import Image from "next/image"
-import { downloadInvoicePDF, downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
+import { downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
 // Pomožna funkcija za formatiranje številk po evropskem standardu
@@ -37,85 +37,86 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
 
   return (
     <div className="space-y-6">
-      {/* CSS stili za print in PDF */}
+      {/* CSS stili za print in PDF - VSE ZMANJŠANO */}
       <style jsx>{`
         @media print {
           .invoice-preview-content {
-            font-size: 12pt !important;
+            font-size: 10pt !important;
             font-family: Arial, sans-serif !important;
           }
           .invoice-title {
-            font-size: 12pt !important;
-            font-weight: bold !important;
-          }
-          .invoice-customer-name {
-            font-size: 14pt !important;
-            font-weight: bold !important;
-          }
-          .invoice-company-info {
-            font-size: 9pt !important;
-          }
-          .invoice-section-title {
-            font-size: 12pt !important;
-            font-weight: bold !important;
-          }
-          .invoice-table {
-            font-size: 9pt !important;
-          }
-          .invoice-table-header {
-            font-size: 9pt !important;
-            font-weight: bold !important;
-          }
-          .invoice-total {
             font-size: 10pt !important;
             font-weight: bold !important;
           }
-          .invoice-footer {
+          .invoice-customer-name {
+            font-size: 11pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-company-info {
+            font-size: 7pt !important;
+          }
+          .invoice-section-title {
+            font-size: 10pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-table {
             font-size: 8pt !important;
+          }
+          .invoice-table-header {
+            font-size: 8pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-total {
+            font-size: 9pt !important;
+            font-weight: bold !important;
+          }
+          .invoice-footer {
+            font-size: 7pt !important;
           }
           .invoice-payment-info {
-            font-size: 11pt !important;
+            font-size: 9pt !important;
           }
           .podpis {
-            font-size: 8pt !important;
+            font-size: 7pt !important;
           }
         }
         
-        /* Stili za normalen prikaz */
+        /* Stili za normalen prikaz - tudi manjši */
         .invoice-preview-content {
           font-family: Arial, sans-serif;
+          font-size: 0.85rem;
         }
         .invoice-title {
-          font-size: 1.2rem;
+          font-size: 1rem;
           font-weight: bold;
         }
         .invoice-customer-name {
-          font-size: 1.125rem;
+          font-size: 0.95rem;
           font-weight: bold;
         }
         .invoice-company-info {
-          font-size: 0.75rem;
+          font-size: 0.65rem;
         }
         .invoice-section-title {
-          font-size: 0.875rem;
+          font-size: 0.8rem;
           font-weight: bold;
         }
         .invoice-table {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
         }
         .invoice-table-header {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-weight: bold;
         }
         .invoice-total {
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           font-weight: bold;
         }
         .invoice-footer {
-          font-size: 0.7rem;
+          font-size: 0.65rem;
         }
         .invoice-payment-info {
-          font-size: 0.875rem;
+          font-size: 0.8rem;
         }
       `}</style>
 
