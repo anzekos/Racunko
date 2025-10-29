@@ -8,6 +8,14 @@ export interface EmailData {
   attachmentContent?: string
 }
 
+// Pomožna funkcija za formatiranje številk po slovenskem standardu
+const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value)
+}
+
 // Dodajte funkcijo za posodobitev statusa računa
 async function updateInvoiceStatus(invoiceId: string, status: string): Promise<void> {
   try {
@@ -55,12 +63,16 @@ Podatki o računu:
 - Številka računa: ${invoice.invoiceNumber}
 - Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
 - Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
-- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR
+- Znesek za plačilo: ${formatNumber(invoice.totalPayable)} EUR
 
 Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640
 Sklic: SI00 ${invoice.invoiceNumber}
 
 Hvala za sodelovanje in lep pozdrav.
+
+--
+2KM Consulting d.o.o.
+E: 2km.consulting@2km.si
       `.trim(),
     }
 
@@ -72,7 +84,7 @@ Hvala za sodelovanje in lep pozdrav.
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // For demonstration, we'll open the user's email client
-    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`
+    const mailtoLink = `mailto:${email}?cc=2km.consulting@2km.si&subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`
     window.open(mailtoLink, "_blank")
 
     return true
@@ -113,14 +125,18 @@ Podatki o računu:
 - Številka računa: ${invoice.invoiceNumber}
 - Datum izdaje: ${new Date(invoice.issueDate).toLocaleDateString("sl-SI")}
 - Valuta: ${new Date(invoice.dueDate).toLocaleDateString("sl-SI")}
-- Znesek za plačilo: ${invoice.totalPayable.toFixed(2)} EUR
+- Znesek za plačilo: ${formatNumber(invoice.totalPayable)} EUR
 
 Plačilo prosimo nakažite na transakcijski račun: SI56 0223 6026 1489 640
 Sklic: SI00 ${invoice.invoiceNumber}
 
 Hvala za sodelovanje in lep pozdrav.
+
+--
+2KM Consulting d.o.o.
+E: 2km.consulting@2km.si
   `.trim()
 
-  const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  const mailtoLink = `mailto:${email}?cc=2km.consulting@2km.si&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   window.open(mailtoLink, "_blank")
 }
