@@ -28,6 +28,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { InvoicePreview } from "@/components/invoice-preview"
 
+const generatePDFFilename = (invoice: SavedInvoice): string => {
+  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
+  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  return `${customerName}-${invoiceNum}.pdf`
+}
+
 export default function InvoicesListPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [invoices, setInvoices] = useState<SavedInvoice[]>([])
@@ -126,7 +132,7 @@ export default function InvoicesListPage() {
               const url = URL.createObjectURL(pdfBlob)
               const a = document.createElement("a")
               a.href = url
-              a.download = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+              a.download = generatePDFFilename(invoice)
               document.body.appendChild(a)
               a.click()
               document.body.removeChild(a)
@@ -166,12 +172,12 @@ export default function InvoicesListPage() {
           console.error('Element not found!')
           throw new Error('Preview element not found')
         }
-
+  
         const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
         const url = URL.createObjectURL(pdfBlob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+        a.download = generatePDFFilename(invoice) // Nova funkcija za ime
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
