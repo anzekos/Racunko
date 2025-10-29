@@ -196,7 +196,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
 
           {offer.serviceDescription && (
             <div className="mb-6">
-              <h4 className="offer-section-title mb-2">Opis storitve in pogoji:</h4>
+              <h4 className="offer-section-title mb-2">Opis storitv:</h4>
               <div className="whitespace-pre-wrap">{offer.serviceDescription}</div>
             </div>
           )}
@@ -245,6 +245,9 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
           </div>
 
           <div className="space-y-2 mb-8 offer-payment-info">
+            <span>Po opravljeni storitvi bo izdan račun za plačilo.</span>
+            <br>
+            </br>
             <div className="flex justify-between">
               <span>Znesek nakažite na TRR:</span>
               <strong className="pr-80">SI56 0223 6026 1489 640</strong>
