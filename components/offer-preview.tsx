@@ -256,12 +256,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
               <span>Pri plačilu se sklicujte na št. ponudbe:</span>
               <strong className="pr-80">{offer.offerNumber}</strong>
             </div>
-            <div className="mt-4">
-              <strong>Pogoji:</strong>
-              <div>Ponudba je veljavna 30 dni od datuma izdaje.</div>
-              <div>Rok izvedbe: 14 dni od sprejema naročila.</div>
-            </div>
-            <div className="mt-4 font-semibold">Hvala za zaupanje!</div>
+            <div className="mt-4 font-semibold">Hvala za sodelovanje!</div>
           </div>
 
           <div className="flex flex-col items-end gap-0">
