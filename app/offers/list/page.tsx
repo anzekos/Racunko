@@ -25,7 +25,7 @@ import {
 } from "lucide-react"
 import { fetchOffers, deleteOffer, updateOfferStatus, type SavedOffer } from "@/lib/database"
 import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
-import { openEmailClient } from "@/lib/email-service"
+import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { OfferPreview } from "@/components/offer-preview"
