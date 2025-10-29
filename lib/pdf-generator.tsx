@@ -1,4 +1,5 @@
-import type { SavedInvoice } from "./database"
+// lib/pdf-generator.ts
+import type { SavedInvoice, SavedOffer, SavedCreditNote } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -29,7 +30,7 @@ function normalizeColors(element: HTMLElement) {
 }
 
 // Funkcija za dodajanje footera na dno PDF-ja
-function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
+function addFooterToPDF(pdf: jsPDF, document: SavedInvoice | SavedOffer | SavedCreditNote) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
@@ -61,6 +62,18 @@ function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
 
 // ENOTNA funkcija za generiranje PDF-ja iz elementa
 export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
+  return generatePDFFromElement(element, invoice)
+}
+
+export async function generateOfferPDFFromElement(element: HTMLElement, offer: SavedOffer): Promise<Blob> {
+  return generatePDFFromElement(element, offer)
+}
+
+export async function generateCreditNotePDFFromElement(element: HTMLElement, creditNote: SavedCreditNote): Promise<Blob> {
+  return generatePDFFromElement(element, creditNote)
+}
+
+async function generatePDFFromElement(element: HTMLElement, document: SavedInvoice | SavedOffer | SavedCreditNote): Promise<Blob> {
   try {
     // Skrijemo akcijske gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
@@ -84,7 +97,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     tempDiv.style.overflow = 'visible'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '10pt' // Zmanjšano iz 12pt
+    tempDiv.style.fontSize = '10pt'
     tempDiv.style.padding = '0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
@@ -101,7 +114,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
 
     // Ustvarimo canvas z zmanjšanim scale za manjšo velikost datoteke
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5, // Zmanjšano iz 2 za manjšo velikost
+      scale: 1.5,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -123,9 +136,8 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       (btn as HTMLElement).style.display = ''
     })
 
-    // Ustvarimo PDF
-    // Uporabljamo JPEG namesto PNG za manjšo velikost
-    const imgData = canvas.toDataURL('image/jpeg', 0.85) // JPEG z 85% kvaliteto namesto PNG
+    // Ustvarimo PDF z JPEG za manjšo velikost
+    const imgData = canvas.toDataURL('image/jpeg', 0.85)
     const pdf = new jsPDF('p', 'mm', 'a4')
     
     const pdfWidth = pdf.internal.pageSize.getWidth()
@@ -139,7 +151,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
-      pdf.addImage(imgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST') // JPEG s hitro kompresijo
+      pdf.addImage(imgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
     } else {
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
@@ -149,7 +161,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     }
 
     // Dodamo footer
-    addFooterToPDF(pdf, invoice)
+    addFooterToPDF(pdf, document)
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
   } catch (error) {
@@ -161,9 +173,9 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
   }
 }
 
+// Funkcije za prenos PDF-jev
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
-  // Default ime PDF: "Ime stranke + št. računa"
-  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
+  const customerName = invoice.customer.Stranka?.replace(/[^a-zA-Z0-9\s]/g, "")?.replace(/\s+/g, "-") || 'stranka'
   const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
   const filename = `${customerName}-${invoiceNum}.pdf`
 
@@ -187,4 +199,71 @@ export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElem
       console.error('Napaka pri generiranju PDF-ja:', error)
       alert('Napaka pri generiranju PDF-ja: ' + error.message)
     })
+}
+
+export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
+  const customerName = offer.customer.Stranka?.replace(/[^a-zA-Z0-9\s]/g, "")?.replace(/\s+/g, "-") || 'stranka'
+  const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  const filename = `${customerName}-${offerNum}.pdf`
+
+  const element = document.getElementById(previewElementId)
+  if (!element) {
+    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
+  }
+
+  generateOfferPDFFromElement(element, offer)
+    .then((pdfBlob) => {
+      const url = URL.createObjectURL(pdfBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
+    .catch(error => {
+      console.error('Napaka pri generiranju PDF-ja:', error)
+      alert('Napaka pri generiranju PDF-ja: ' + error.message)
+    })
+}
+
+export function downloadCreditNotePDFFromPreview(creditNote: SavedCreditNote, previewElementId: string = 'credit-note-preview-content') {
+  const customerName = creditNote.customer.Stranka?.replace(/[^a-zA-Z0-9\s]/g, "")?.replace(/\s+/g, "-") || 'stranka'
+  const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  const filename = `${customerName}-${creditNoteNum}.pdf`
+
+  const element = document.getElementById(previewElementId)
+  if (!element) {
+    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
+  }
+
+  generateCreditNotePDFFromElement(element, creditNote)
+    .then((pdfBlob) => {
+      const url = URL.createObjectURL(pdfBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
+    .catch(error => {
+      console.error('Napaka pri generiranju PDF-ja:', error)
+      alert('Napaka pri generiranju PDF-ja: ' + error.message)
+    })
+}
+
+// Preproste funkcije za prenos
+export function downloadInvoicePDF(invoice: SavedInvoice) {
+  downloadInvoicePDFFromPreview(invoice)
+}
+
+export function downloadOfferPDF(offer: SavedOffer) {
+  downloadOfferPDFFromPreview(offer)
+}
+
+export function downloadCreditNotePDF(creditNote: SavedCreditNote) {
+  downloadCreditNotePDFFromPreview(creditNote)
 }
