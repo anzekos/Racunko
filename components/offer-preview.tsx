@@ -246,8 +246,9 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
 
           <div className="space-y-2 mb-8 offer-payment-info">
             <span>Po opravljeni storitvi bo izdan račun za plačilo.</span>
-            <br>
-            </br>
+            <br />
+            <br />
+
             <div className="flex justify-between">
               <span>Znesek nakažite na TRR:</span>
               <strong className="pr-80">SI56 0223 6026 1489 640</strong>
