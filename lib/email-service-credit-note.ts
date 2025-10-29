@@ -69,10 +69,6 @@ Vračilo zneska bo izvedeno v roku 14 dni na transakcijski račun, ki ste ga nav
 Pri vračilu se bomo sklicevali na št. dobropisa: ${creditNote.creditNoteNumber}
 
 Hvala za sodelovanje in lep pozdrav.
-
---
-2KM Consulting d.o.o.
-E: 2km.consulting@2km.si
     `.trim()
 
     const emailData: EmailData = {
@@ -84,7 +80,7 @@ E: 2km.consulting@2km.si
     console.log("Sending email:", emailData)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const mailtoLink = `mailto:${email}?cc=2km.consulting@2km.si&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     window.open(mailtoLink, "_blank")
 
     return true
@@ -129,12 +125,8 @@ Vračilo zneska bo izvedeno v roku 14 dni na transakcijski račun, ki ste ga nav
 Pri vračilu se bomo sklicevali na št. dobropisa: ${creditNote.creditNoteNumber}
 
 Hvala za sodelovanje in lep pozdrav.
-
---
-2KM Consulting d.o.o.
-E: 2km.consulting@2km.si
   `.trim()
 
-  const mailtoLink = `mailto:${email}?cc=2km.consulting@2km.si&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   window.open(mailtoLink, "_blank")
 }
