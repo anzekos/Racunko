@@ -4,9 +4,9 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Download, Mail, Printer } from "lucide-react"
-import type { Offer, SavedOffer } from "@/lib/database"
+import type { Offer } from "@/lib/database"
 import Image from "next/image"
-import { downloadOfferPDFFromPreview } from "@/lib/offer-pdf-generator"
+import { downloadOfferPDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
 const formatNumber = (value: number): string => {
@@ -17,7 +17,7 @@ const formatNumber = (value: number): string => {
 }
 
 interface OfferPreviewProps {
-  offer: Offer | SavedOffer
+  offer: Offer
   onDownload: () => void
   onSendEmail: () => void
 }
@@ -28,7 +28,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
   }
 
   const handleDirectDownload = () => {
-    downloadOfferPDFFromPreview(offer as SavedOffer, 'offer-preview-content')
+    downloadOfferPDFFromPreview(offer, 'offer-preview-content')
   }
 
   const handleDirectEmail = () => {
@@ -117,7 +117,6 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
         }
       `}</style>
 
-      {/* Action Buttons */}
       <div className="flex justify-end gap-2 print:hidden">
         <Button variant="outline" onClick={handlePrint} className="gap-2 bg-transparent">
           <Printer className="h-4 w-4" />
@@ -133,10 +132,8 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
         </Button>
       </div>
 
-      {/* Offer Document */}
       <Card className="max-w-4xl mx-auto">
         <CardContent id="offer-preview-content" className="p-8 print:p-0 offer-preview-content">
-          {/* Header with Logo */}
           <div className="flex justify-end mb-6">
             <div className="relative w-35 h-18">
               <Image 
@@ -154,9 +151,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
 
           <hr className="border-[#934435] border-1 mb-6" />
 
-          {/* Customer and Company Info */}
           <div className="grid grid-cols-2 gap-8 mb-8">
-            {/* Customer Info */}
             <div className="space-y-0 -my-1">
               <div className="py-0.1"><strong>{offer.customer.Stranka}</strong></div>
               <div className="py-0.1">{offer.customer.Naslov}</div>
@@ -171,15 +166,14 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
                   <strong>Ljubljana:</strong> {new Date(offer.issueDate).toLocaleDateString("sl-SI")}
                 </div>
                 <div className="py-0.1">
-                  <strong>Veljavnost do:</strong> {new Date(offer.dueDate).toLocaleDateString("sl-SI")}
+                  <strong>Veljavnost:</strong> {new Date(offer.dueDate).toLocaleDateString("sl-SI")}
                 </div>
                 <div className="py-0.1">
-                  <strong>Datum opr. storitve:</strong> {new Date(offer.serviceDate).toLocaleDateString("sl-SI")}
+                  <strong>Predviden datum storitve:</strong> {new Date(offer.serviceDate).toLocaleDateString("sl-SI")}
                 </div>
               </div>
             </div>
 
-            {/* Company Info */}
             <div className="text-right offer-company-info space-y-1">
               <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
               <div>Športna ulica 22, 1000 Ljubljana</div>
@@ -195,7 +189,6 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
             </div>
           </div>
 
-          {/* Offer Number */}
           <div className="mb-6">
             <div className="text-xl">
               <strong>Ponudba:</strong> {offer.offerNumber}
@@ -204,15 +197,13 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
 
           <hr className="mb-6" />
 
-          {/* Service Description */}
           {offer.serviceDescription && (
             <div className="mb-6">
-              <h4 className="offer-section-title mb-2">Opis storitve:</h4>
+              <h4 className="offer-section-title mb-2">Opis storitve in pogoji:</h4>
               <div className="whitespace-pre-wrap">{offer.serviceDescription}</div>
             </div>
           )}
 
-          {/* Offer Items Table */}
           <div className="mb-8">
             <table className="w-full border-collapse border border-gray-300 offer-table">
               <thead>
@@ -256,7 +247,6 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
             </table>
           </div>
 
-          {/* Payment Info */}
           <div className="space-y-2 mb-8 offer-payment-info">
             <div className="flex justify-between">
               <span>Znesek nakažite na TRR:</span>
@@ -266,11 +256,14 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
               <span>Pri plačilu se sklicujte na št. ponudbe:</span>
               <strong className="pr-80">{offer.offerNumber}</strong>
             </div>
-            <div>V primeru zamude se zaračunavajo zamudne obresti.</div>
-            <div className="mt-4 font-semibold">Hvala za sodelovanje!</div>
+            <div className="mt-4">
+              <strong>Pogoji:</strong>
+              <div>Ponudba je veljavna 30 dni od datuma izdaje.</div>
+              <div>Rok izvedbe: 14 dni od sprejema naročila.</div>
+            </div>
+            <div className="mt-4 font-semibold">Hvala za zaupanje!</div>
           </div>
 
-          {/* Signature */}
           <div className="flex flex-col items-end gap-0">
             <strong className="podpis text-sm mb-0.5">2KM Consulting d.o.o.</strong>
             <div className="relative w-45 h-26">
@@ -286,7 +279,6 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
             </div>
           </div>
 
-          {/* Footer za normalen prikaz */}
           <div className="normal-footer">
             <hr className="border-[#934435] border-1 mb-4" />
             <div className="text-right offer-footer text-[#934435] space-y-2">
