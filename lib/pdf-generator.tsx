@@ -1,10 +1,4 @@
 import type { SavedInvoice } from "./database"
-
-// Import type za Offer in CreditNote
-type SavedOffer = SavedInvoice & { offerNumber: string }
-type SavedCreditNote = SavedInvoice & { creditNoteNumber: string }
-type DocumentType = SavedInvoice | SavedOffer | SavedCreditNote
-
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -35,7 +29,7 @@ function normalizeColors(element: HTMLElement) {
 }
 
 // Funkcija za dodajanje footera na dno PDF-ja
-function addFooterToPDF(pdf: jsPDF, document: DocumentType) {
+function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
@@ -65,6 +59,115 @@ function addFooterToPDF(pdf: jsPDF, document: DocumentType) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
+// NOVA FUNKCIJA: Optimizirana za vektorsko kvaliteto in majhno velikost
+export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
+  try {
+    // Skrijemo akcijske gumbe
+    const actionButtons = element.querySelectorAll('.print\\:hidden')
+    actionButtons.forEach(btn => {
+      (btn as HTMLElement).style.display = 'none'
+    })
+
+    // Kloniramo element
+    const clonedElement = element.cloneNode(true) as HTMLElement
+    
+    // Odstranimo footer elemente, ker jih dodamo ročno v PDF
+    const footerElements = clonedElement.querySelectorAll('.normal-footer')
+    footerElements.forEach(footer => footer.remove())
+    
+    // Ustvarimo začasen div
+    const tempDiv = document.createElement('div')
+    tempDiv.style.position = 'fixed'
+    tempDiv.style.top = '-9999px'
+    tempDiv.style.left = '0'
+    tempDiv.style.width = '210mm'
+    tempDiv.style.overflow = 'visible'
+    tempDiv.style.backgroundColor = '#ffffff'
+    tempDiv.style.fontFamily = 'Arial, sans-serif'
+    tempDiv.style.fontSize = '9pt'
+    tempDiv.style.padding = '0'
+    tempDiv.appendChild(clonedElement)
+    document.body.appendChild(tempDiv)
+
+    // Počakamo, da se vse naloži
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Normaliziramo barve
+    const allElements = tempDiv.querySelectorAll('*')
+    allElements.forEach(el => {
+      const element = el as HTMLElement
+      normalizeColors(element)
+    })
+
+    // IZBOLJŠANO: Nižji scale za manjšo velikost, ampak še vedno dovolj kvaliteten
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2.0, // Povečano nazaj na 2.0 za boljšo kvaliteto
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: tempDiv.scrollWidth,
+      height: tempDiv.scrollHeight,
+      imageTimeout: 0,
+      removeContainer: true,
+      onclone: (clonedDoc) => {
+        const clonedElements = clonedDoc.querySelectorAll('*')
+        clonedElements.forEach(el => {
+          const element = el as HTMLElement
+          normalizeColors(element)
+        })
+      }
+    })
+
+    // Počistimo
+    document.body.removeChild(tempDiv)
+    actionButtons.forEach(btn => {
+      (btn as HTMLElement).style.display = ''
+    })
+
+    // KLJUČNA SPREMEMBA: Uporabimo PNG z optimizirano kompresijo
+    // PNG ohranja ostrino besedila bolje kot JPEG
+    const imgData = canvas.toDataURL('image/png')
+    
+    // Kompresija PNG slike
+    const compressedImgData = await compressPNG(imgData, 0.95) // 70% kvalitete
+    
+    const pdf = new jsPDF('p', 'mm', 'a4', true) // true = compress PDF
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    
+    const margin = 10;
+    const topMargin = 10;
+    const imgWidth = pdfWidth - (2 * margin)
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    
+    const availableHeight = pdfHeight - topMargin - margin - 20
+    
+    if (imgHeight <= availableHeight) {
+      pdf.addImage(compressedImgData, 'PNG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
+    } else {
+      const scale = availableHeight / imgHeight
+      const scaledWidth = imgWidth * scale
+      const scaledHeight = imgHeight * scale
+      
+      pdf.addImage(compressedImgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
+    }
+
+    // Dodamo footer
+    addFooterToPDF(pdf, invoice)
+
+    // Shranimo z optimizacijo
+    return new Blob([pdf.output('blob')], { type: 'application/pdf' })
+  } catch (error) {
+    const actionButtons = element.querySelectorAll('.print\\:hidden')
+    actionButtons.forEach(btn => {
+      (btn as HTMLElement).style.display = ''
+    })
+    throw error
+  }
+}
+
 // Pomožna funkcija za kompresijo PNG
 async function compressPNG(dataUrl: string, quality: number): Promise<string> {
   return new Promise((resolve) => {
@@ -79,6 +182,7 @@ async function compressPNG(dataUrl: string, quality: number): Promise<string> {
       ctx.imageSmoothingQuality = 'high'
       ctx.drawImage(img, 0, 0)
       
+      // Poskusimo s JPEG kompresijo za manjšo velikost, ampak z visoko kvaliteto
       const compressed = canvas.toDataURL('image/jpeg', quality)
       resolve(compressed)
     }
@@ -86,190 +190,18 @@ async function compressPNG(dataUrl: string, quality: number): Promise<string> {
   })
 }
 
-// Pomožna funkcija za pridobitev številke dokumenta
-function getDocumentNumber(document: DocumentType): string {
-  if ('invoiceNumber' in document) return document.invoiceNumber
-  if ('offerNumber' in document) return (document as any).offerNumber
-  if ('creditNoteNumber' in document) return (document as any).creditNoteNumber
-  return 'unknown'
-}
-
-// IZBOLJŠANA UNIVERZALNA FUNKCIJA z boljšim error handlingom
-export async function generateDocumentPDFFromElement(element: HTMLElement, document: DocumentType): Promise<Blob> {
-  let tempDiv: HTMLElement | null = null
-  
-  try {
-    // Skrijemo akcijske gumbe
-    const actionButtons = element.querySelectorAll('.print\\:hidden')
-    actionButtons.forEach(btn => {
-      (btn as HTMLElement).style.display = 'none'
-    })
-
-    // Kloniramo element - POMEMBNO: deep clone
-    const clonedElement = element.cloneNode(true) as HTMLElement
-    
-    // Odstranimo footer elemente
-    const footerElements = clonedElement.querySelectorAll('.normal-footer')
-    footerElements.forEach(footer => footer.remove())
-    
-    // Odstranimo Next.js Image komponente in jih nadomestimo z navadnimi img
-    const nextImages = clonedElement.querySelectorAll('img')
-    nextImages.forEach(img => {
-      // Kopiramo src iz Next.js Image
-      if (img.src && img.src.startsWith('blob:')) {
-        // Če je blob, poskusimo najti original src
-        const parentDiv = img.closest('div[style*="position"]')
-        if (parentDiv) {
-          const allImgs = parentDiv.querySelectorAll('img')
-          allImgs.forEach(i => {
-            if (i.src && !i.src.startsWith('blob:')) {
-              img.src = i.src
-            }
-          })
-        }
-      }
-    })
-    
-    // Ustvarimo začasen div
-    tempDiv = document.createElement('div')
-    tempDiv.style.position = 'fixed'
-    tempDiv.style.top = '-9999px'
-    tempDiv.style.left = '0'
-    tempDiv.style.width = '210mm'
-    tempDiv.style.overflow = 'visible'
-    tempDiv.style.backgroundColor = '#ffffff'
-    tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '9pt'
-    tempDiv.style.padding = '0'
-    tempDiv.appendChild(clonedElement)
-    document.body.appendChild(tempDiv)
-
-    // Počakamo da se vse naloži
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    // Normaliziramo barve
-    const allElements = tempDiv.querySelectorAll('*')
-    allElements.forEach(el => {
-      const element = el as HTMLElement
-      normalizeColors(element)
-    })
-
-    // IZBOLJŠAN html2canvas config
-    const canvas = await html2canvas(tempDiv, {
-      scale: 2.0,
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: '#ffffff',
-      logging: false,
-      width: tempDiv.scrollWidth,
-      height: tempDiv.scrollHeight,
-      windowWidth: tempDiv.scrollWidth,
-      windowHeight: tempDiv.scrollHeight,
-      imageTimeout: 15000,
-      removeContainer: false,
-      foreignObjectRendering: false, // POMEMBNO: izklopi za boljšo kompatibilnost
-      onclone: (clonedDoc, clonedElement) => {
-        // Dodatna obdelava kloniranega dokumenta
-        const clonedElements = clonedElement.querySelectorAll('*')
-        clonedElements.forEach(el => {
-          const element = el as HTMLElement
-          normalizeColors(element)
-          
-          // Odstrani potencialno problematične style
-          if (element.style) {
-            element.style.transform = 'none'
-            element.style.transition = 'none'
-            element.style.animation = 'none'
-          }
-        })
-      }
-    })
-
-    // Počistimo
-    if (tempDiv && document.body.contains(tempDiv)) {
-      document.body.removeChild(tempDiv)
-    }
-    tempDiv = null
-    
-    actionButtons.forEach(btn => {
-      (btn as HTMLElement).style.display = ''
-    })
-
-    // Konvertiramo canvas v sliko
-    const imgData = canvas.toDataURL('image/png')
-    const compressedImgData = await compressPNG(imgData, 0.95)
-    
-    const pdf = new jsPDF('p', 'mm', 'a4', true)
-    
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = pdf.internal.pageSize.getHeight()
-    
-    const margin = 10;
-    const topMargin = 10;
-    const imgWidth = pdfWidth - (2 * margin)
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
-    
-    const availableHeight = pdfHeight - topMargin - margin - 20
-    
-    if (imgHeight <= availableHeight) {
-      pdf.addImage(compressedImgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
-    } else {
-      const scale = availableHeight / imgHeight
-      const scaledWidth = imgWidth * scale
-      const scaledHeight = imgHeight * scale
-      
-      pdf.addImage(compressedImgData, 'JPEG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
-    }
-
-    addFooterToPDF(pdf, document)
-
-    return new Blob([pdf.output('blob')], { type: 'application/pdf' })
-    
-  } catch (error) {
-    // Cleanup v primeru napake
-    console.error('Napaka pri generiranju PDF-ja:', error)
-    
-    if (tempDiv && document.body.contains(tempDiv)) {
-      document.body.removeChild(tempDiv)
-    }
-    
-    const actionButtons = element.querySelectorAll('.print\\:hidden')
-    actionButtons.forEach(btn => {
-      (btn as HTMLElement).style.display = ''
-    })
-    
-    throw new Error(`Napaka pri generiranju PDF-ja: ${error instanceof Error ? error.message : 'Neznana napaka'}`)
-  }
-}
-
-// Pomožna funkcija za generiranje imena datoteke
-function generatePDFFilename(document: DocumentType, docType: 'invoice' | 'offer' | 'credit-note'): string {
-  const customerName = document.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
-  const docNumber = getDocumentNumber(document).replace(/[^a-zA-Z0-9]/g, "-")
-  
-  const prefix = {
-    'invoice': 'racun',
-    'offer': 'ponudba',
-    'credit-note': 'dobropis'
-  }[docType]
-  
-  return `${customerName}-${prefix}-${docNumber}.pdf`
-}
-
-// INVOICE funkcije
-export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
-  return generateDocumentPDFFromElement(element, invoice)
-}
-
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
-  const filename = generatePDFFilename(invoice, 'invoice')
+  // Default ime PDF: "Ime stranke + št. računa"
+  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
+  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  const filename = `${customerName}-${invoiceNum}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
     throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
   }
 
-  generateDocumentPDFFromElement(element, invoice)
+  generateInvoicePDFFromElement(element, invoice)
     .then((pdfBlob) => {
       const url = URL.createObjectURL(pdfBlob)
       const a = document.createElement("a")
@@ -282,78 +214,6 @@ export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElem
     })
     .catch(error => {
       console.error('Napaka pri generiranju PDF-ja:', error)
-      alert('Napaka pri generiranju PDF-ja: ' + (error instanceof Error ? error.message : 'Neznana napaka'))
+      alert('Napaka pri generiranju PDF-ja: ' + error.message)
     })
-}
-
-export function downloadInvoicePDF(invoice: SavedInvoice) {
-  downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
-}
-
-// OFFER funkcije
-export async function generateOfferPDFFromElement(element: HTMLElement, offer: SavedOffer): Promise<Blob> {
-  return generateDocumentPDFFromElement(element, offer)
-}
-
-export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
-  const filename = generatePDFFilename(offer, 'offer')
-
-  const element = document.getElementById(previewElementId)
-  if (!element) {
-    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
-  }
-
-  generateDocumentPDFFromElement(element, offer)
-    .then((pdfBlob) => {
-      const url = URL.createObjectURL(pdfBlob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    })
-    .catch(error => {
-      console.error('Napaka pri generiranju PDF-ja:', error)
-      alert('Napaka pri generiranju PDF-ja: ' + (error instanceof Error ? error.message : 'Neznana napaka'))
-    })
-}
-
-export function downloadOfferPDF(offer: SavedOffer) {
-  downloadOfferPDFFromPreview(offer, 'offer-preview-content')
-}
-
-// CREDIT NOTE funkcije
-export async function generateCreditNotePDFFromElement(element: HTMLElement, creditNote: SavedCreditNote): Promise<Blob> {
-  return generateDocumentPDFFromElement(element, creditNote)
-}
-
-export function downloadCreditNotePDFFromPreview(creditNote: SavedCreditNote, previewElementId: string = 'credit-note-preview-content') {
-  const filename = generatePDFFilename(creditNote, 'credit-note')
-
-  const element = document.getElementById(previewElementId)
-  if (!element) {
-    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
-  }
-
-  generateDocumentPDFFromElement(element, creditNote)
-    .then((pdfBlob) => {
-      const url = URL.createObjectURL(pdfBlob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    })
-    .catch(error => {
-      console.error('Napaka pri generiranju PDF-ja:', error)
-      alert('Napaka pri generiranju PDF-ja: ' + (error instanceof Error ? error.message : 'Neznana napaka'))
-    })
-}
-
-export function downloadCreditNotePDF(creditNote: SavedCreditNote) {
-  downloadCreditNotePDFFromPreview(creditNote, 'credit-note-preview-content')
 }
