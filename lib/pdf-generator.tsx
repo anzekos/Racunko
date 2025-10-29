@@ -1,4 +1,10 @@
 import type { SavedInvoice } from "./database"
+
+// Import type za Offer in CreditNote (dodaj v database.ts če še ni)
+type SavedOffer = SavedInvoice & { offerNumber: string }
+type SavedCreditNote = SavedInvoice & { creditNoteNumber: string }
+type DocumentType = SavedInvoice | SavedOffer | SavedCreditNote
+
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -29,7 +35,7 @@ function normalizeColors(element: HTMLElement) {
 }
 
 // Funkcija za dodajanje footera na dno PDF-ja
-function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
+function addFooterToPDF(pdf: jsPDF, document: DocumentType) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   
@@ -59,8 +65,38 @@ function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
-// NOVA FUNKCIJA: Optimizirana za vektorsko kvaliteto in majhno velikost
-export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
+// Pomožna funkcija za kompresijo PNG
+async function compressPNG(dataUrl: string, quality: number): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      
+      const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, 0, 0)
+      
+      // JPEG kompresija za manjšo velikost z visoko kvaliteto (95%)
+      const compressed = canvas.toDataURL('image/jpeg', quality)
+      resolve(compressed)
+    }
+    img.src = dataUrl
+  })
+}
+
+// Pomožna funkcija za pridobitev številke dokumenta
+function getDocumentNumber(document: DocumentType): string {
+  if ('invoiceNumber' in document) return document.invoiceNumber
+  if ('offerNumber' in document) return (document as any).offerNumber
+  if ('creditNoteNumber' in document) return (document as any).creditNoteNumber
+  return 'unknown'
+}
+
+// UNIVERZALNA FUNKCIJA: Optimizirana za vektorsko kvaliteto in majhno velikost
+export async function generateDocumentPDFFromElement(element: HTMLElement, document: DocumentType): Promise<Blob> {
   try {
     // Skrijemo akcijske gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
@@ -99,9 +135,9 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       normalizeColors(element)
     })
 
-    // IZBOLJŠANO: Nižji scale za manjšo velikost, ampak še vedno dovolj kvaliteten
+    // Renderanje z html2canvas
     const canvas = await html2canvas(tempDiv, {
-      scale: 2.0, // Povečano nazaj na 2.0 za boljšo kvaliteto
+      scale: 2.0,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -125,12 +161,11 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       (btn as HTMLElement).style.display = ''
     })
 
-    // KLJUČNA SPREMEMBA: Uporabimo PNG z optimizirano kompresijo
-    // PNG ohranja ostrino besedila bolje kot JPEG
+    // PNG z optimizirano kompresijo
     const imgData = canvas.toDataURL('image/png')
     
-    // Kompresija PNG slike
-    const compressedImgData = await compressPNG(imgData, 0.95) // 70% kvalitete
+    // Kompresija z 95% kvalitete za optimalen kompromis
+    const compressedImgData = await compressPNG(imgData, 0.95)
     
     const pdf = new jsPDF('p', 'mm', 'a4', true) // true = compress PDF
     
@@ -145,19 +180,18 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
-      pdf.addImage(compressedImgData, 'PNG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
+      pdf.addImage(compressedImgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
     } else {
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
       
-      pdf.addImage(compressedImgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
+      pdf.addImage(compressedImgData, 'JPEG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
     }
 
     // Dodamo footer
-    addFooterToPDF(pdf, invoice)
+    addFooterToPDF(pdf, document)
 
-    // Shranimo z optimizacijo
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
   } catch (error) {
     const actionButtons = element.querySelectorAll('.print\\:hidden')
@@ -168,40 +202,34 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
   }
 }
 
-// Pomožna funkcija za kompresijo PNG
-async function compressPNG(dataUrl: string, quality: number): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      
-      const ctx = canvas.getContext('2d')!
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-      ctx.drawImage(img, 0, 0)
-      
-      // Poskusimo s JPEG kompresijo za manjšo velikost, ampak z visoko kvaliteto
-      const compressed = canvas.toDataURL('image/jpeg', quality)
-      resolve(compressed)
-    }
-    img.src = dataUrl
-  })
+// Pomožna funkcija za generiranje imena datoteke
+function generatePDFFilename(document: DocumentType, docType: 'invoice' | 'offer' | 'credit-note'): string {
+  const customerName = document.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
+  const docNumber = getDocumentNumber(document).replace(/[^a-zA-Z0-9]/g, "-")
+  
+  const prefix = {
+    'invoice': 'racun',
+    'offer': 'ponudba',
+    'credit-note': 'dobropis'
+  }[docType]
+  
+  return `${customerName}-${prefix}-${docNumber}.pdf`
+}
+
+// INVOICE funkcije (ohranimo stare za kompatibilnost)
+export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
+  return generateDocumentPDFFromElement(element, invoice)
 }
 
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
-  // Default ime PDF: "Ime stranke + št. računa"
-  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
-  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
-  const filename = `${customerName}-${invoiceNum}.pdf`
+  const filename = generatePDFFilename(invoice, 'invoice')
 
   const element = document.getElementById(previewElementId)
   if (!element) {
     throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
   }
 
-  generateInvoicePDFFromElement(element, invoice)
+  generateDocumentPDFFromElement(element, invoice)
     .then((pdfBlob) => {
       const url = URL.createObjectURL(pdfBlob)
       const a = document.createElement("a")
@@ -216,4 +244,77 @@ export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElem
       console.error('Napaka pri generiranju PDF-ja:', error)
       alert('Napaka pri generiranju PDF-ja: ' + error.message)
     })
+}
+
+// OFFER funkcije
+export async function generateOfferPDFFromElement(element: HTMLElement, offer: SavedOffer): Promise<Blob> {
+  return generateDocumentPDFFromElement(element, offer)
+}
+
+export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
+  const filename = generatePDFFilename(offer, 'offer')
+
+  const element = document.getElementById(previewElementId)
+  if (!element) {
+    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
+  }
+
+  generateDocumentPDFFromElement(element, offer)
+    .then((pdfBlob) => {
+      const url = URL.createObjectURL(pdfBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
+    .catch(error => {
+      console.error('Napaka pri generiranju PDF-ja:', error)
+      alert('Napaka pri generiranju PDF-ja: ' + error.message)
+    })
+}
+
+export function downloadOfferPDF(offer: SavedOffer) {
+  downloadOfferPDFFromPreview(offer, 'offer-preview-content')
+}
+
+// CREDIT NOTE funkcije
+export async function generateCreditNotePDFFromElement(element: HTMLElement, creditNote: SavedCreditNote): Promise<Blob> {
+  return generateDocumentPDFFromElement(element, creditNote)
+}
+
+export function downloadCreditNotePDFFromPreview(creditNote: SavedCreditNote, previewElementId: string = 'credit-note-preview-content') {
+  const filename = generatePDFFilename(creditNote, 'credit-note')
+
+  const element = document.getElementById(previewElementId)
+  if (!element) {
+    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
+  }
+
+  generateDocumentPDFFromElement(element, creditNote)
+    .then((pdfBlob) => {
+      const url = URL.createObjectURL(pdfBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
+    .catch(error => {
+      console.error('Napaka pri generiranju PDF-ja:', error)
+      alert('Napaka pri generiranju PDF-ja: ' + error.message)
+    })
+}
+
+export function downloadCreditNotePDF(creditNote: SavedCreditNote) {
+  downloadCreditNotePDFFromPreview(creditNote, 'credit-note-preview-content')
+}
+
+// Še za kompatibilnost z invoices - downloadInvoicePDF
+export function downloadInvoicePDF(invoice: SavedInvoice) {
+  downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
 }
