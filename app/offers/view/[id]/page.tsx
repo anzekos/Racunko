@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { OfferPreview } from "@/components/offer-preview"
 import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
 import { fetchOfferById, type SavedOffer, updateOfferStatus } from "@/lib/database"
-import { downloadOfferPDFFromPreview } from "@/lib/pdf-generator"
+import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
 import { openEmailClient } from "@/lib/email-service"
 
 export default function OfferViewPage() {
