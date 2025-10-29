@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { CreditNotePreview } from "@/components/credit-note-preview"
 import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
 import { fetchCreditNoteById, type SavedCreditNote, updateCreditNoteStatus } from "@/lib/database"
-import { downloadCreditNotePDFFromPreview } from "@/lib/pdf-generator"
+import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
 import { openEmailClient } from "@/lib/email-service"
 
 export default function CreditNoteViewPage() {
