@@ -7,7 +7,7 @@ import { Download, Mail, Printer } from "lucide-react"
 import type { CreditNote } from "@/lib/database"
 import Image from "next/image"
 import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
-import { openEmailClient } from "@/lib/email-service"
+import { openEmailClient, sendCreditNoteEmail } from "@/lib/email-service-credit-note"
 
 const formatNumber = (value: number): string => {
   return new Intl.NumberFormat('sl-SI', {
