@@ -118,11 +118,12 @@ export function InvoiceForm({
     }
   }, [editingInvoice, saveAsMode])
 
+  // SPREMENJENO: Valuta 15 dni namesto 30
   useEffect(() => {
     if (issueDate) {
       const issue = new Date(issueDate)
       const due = new Date(issue)
-      due.setDate(due.getDate() + 30)
+      due.setDate(due.getDate() + 15) // Spremenil iz 30 na 15 dni
       setDueDate(due.toISOString().split("T")[0])
     }
   }, [issueDate])
@@ -250,7 +251,7 @@ export function InvoiceForm({
                 <Input id="issue-date" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="due-date">Valuta</Label>
+                <Label htmlFor="due-date">Valuta (15 dni)</Label>
                 <Input id="due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
             </div>
