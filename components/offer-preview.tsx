@@ -7,7 +7,7 @@ import { Download, Mail, Printer } from "lucide-react"
 import type { Offer } from "@/lib/database"
 import Image from "next/image"
 import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
-import { openEmailClient } from "@/lib/email-service"
+import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 
 const formatNumber = (value: number): string => {
   return new Intl.NumberFormat('sl-SI', {
