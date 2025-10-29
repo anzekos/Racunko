@@ -49,7 +49,7 @@ function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   
   const textOffset = 10;
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setTextColor(147, 68, 53);
   pdf.setFont('helvetica', 'bold');
   pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin - textOffset, footerY - 14, { align: 'right' });
@@ -58,7 +58,6 @@ function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   pdf.text('DŠ: SI 10628169', pageWidth - margin - textOffset, footerY - 6, { align: 'right' });
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
-
 
 // ENOTNA funkcija za generiranje PDF-ja iz elementa
 export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
@@ -85,7 +84,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     tempDiv.style.overflow = 'visible'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '12pt'
+    tempDiv.style.fontSize = '10pt' // Zmanjšano iz 12pt
     tempDiv.style.padding = '0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
@@ -100,9 +99,9 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       normalizeColors(element)
     })
 
-    // Ustvarimo canvas
+    // Ustvarimo canvas z zmanjšanim scale za manjšo velikost datoteke
     const canvas = await html2canvas(tempDiv, {
-      scale: 2,
+      scale: 1.5, // Zmanjšano iz 2 za manjšo velikost
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -125,7 +124,8 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     })
 
     // Ustvarimo PDF
-    const imgData = canvas.toDataURL('image/png', 1.0)
+    // Uporabljamo JPEG namesto PNG za manjšo velikost
+    const imgData = canvas.toDataURL('image/jpeg', 0.85) // JPEG z 85% kvaliteto namesto PNG
     const pdf = new jsPDF('p', 'mm', 'a4')
     
     const pdfWidth = pdf.internal.pageSize.getWidth()
@@ -139,13 +139,13 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
-      pdf.addImage(imgData, 'PNG', margin, topMargin, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST') // JPEG s hitro kompresijo
     } else {
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
       
-      pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight)
+      pdf.addImage(imgData, 'JPEG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
     }
 
     // Dodamo footer
@@ -162,7 +162,10 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
 }
 
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
-  const filename = `racun-${invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+  // Default ime PDF: "Ime stranke + št. računa"
+  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
+  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  const filename = `${customerName}-${invoiceNum}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
