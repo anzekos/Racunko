@@ -24,7 +24,7 @@ import {
   TrendingUp
 } from "lucide-react"
 import { fetchOffers, deleteOffer, updateOfferStatus, type SavedOffer } from "@/lib/database"
-import { generateOfferPDFFromElement } from "@/lib/pdf-generator"
+import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
