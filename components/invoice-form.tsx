@@ -26,7 +26,8 @@ interface AutocompleteProps {
   selectedCustomer: Customer | null
 }
 
-function CustomerAutocomplete({ customers, onCustomerSelect, selectedCustomer }: AutocompleteProps) {
+// DODAJTE EXPORT - to je ključna sprememba
+export function CustomerAutocomplete({ customers, onCustomerSelect, selectedCustomer }: AutocompleteProps) {
   const [query, setQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
