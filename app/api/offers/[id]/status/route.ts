@@ -12,7 +12,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { status } = await request.json()
 
-    const validStatuses = ['draft', 'sent', 'accepted', 'rejected', 'cancelled']
+    const validStatuses = ['draft', 'sent', 'accepted', 'rejected']
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { error: 'Neveljaven status' },
