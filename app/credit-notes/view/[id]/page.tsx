@@ -1,3 +1,4 @@
+// app/credit-notes/view/[id]/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { CreditNotePreview } from "@/components/credit-note-preview"
 import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
 import { fetchCreditNoteById, type SavedCreditNote, updateCreditNoteStatus } from "@/lib/database"
-import { downloadCreditNotePDF } from "@/lib/pdf-generator"
+import { downloadCreditNotePDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
 export default function CreditNoteViewPage() {
@@ -40,7 +41,7 @@ export default function CreditNoteViewPage() {
 
   const handleDownloadPDF = () => {
     if (creditNote) {
-      downloadCreditNotePDF(creditNote)
+      downloadCreditNotePDFFromPreview(creditNote)
     }
   }
 
@@ -48,7 +49,6 @@ export default function CreditNoteViewPage() {
     if (creditNote) {
       try {
         await openEmailClient(creditNote, 'credit-note')
-        // Osvežimo podatke, da vidimo spremembo statusa
         await loadCreditNote(creditNote.id!)
       } catch (error) {
         console.error("Error sending email:", error)
@@ -69,30 +69,29 @@ export default function CreditNoteViewPage() {
     }
   }
 
-  const handleMarkAsProcessed = async () => {
+  const handleMarkAsPaid = async () => {
     if (creditNote) {
-      if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNote.creditNoteNumber} kot obdelan?`)) {
+      if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNote.creditNoteNumber} kot plačan?`)) {
         try {
-          await updateCreditNoteStatus(creditNote.id!, 'processed')
-          // Osvežimo podatke
+          await updateCreditNoteStatus(creditNote.id!, 'paid')
           await loadCreditNote(creditNote.id!)
         } catch (error) {
-          console.error("Error marking credit note as processed:", error)
-          alert("Napaka pri označevanju dobropisa kot obdelan")
+          console.error("Error marking credit note as paid:", error)
+          alert("Napaka pri označevanju dobropisa kot plačan")
         }
       }
     }
   }
 
-  const handleMarkAsUnprocessed = async () => {
+  const handleMarkAsUnpaid = async () => {
     if (creditNote) {
-      if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNote.creditNoteNumber} kot neobdelan?`)) {
+      if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNote.creditNoteNumber} kot neplačan?`)) {
         try {
           await updateCreditNoteStatus(creditNote.id!, 'sent')
           loadCreditNote(creditNote.id!)
         } catch (error) {
-          console.error("Error marking credit note as unprocessed:", error)
-          alert("Napaka pri označevanju dobropisa kot neobdelan")
+          console.error("Error marking credit note as unpaid:", error)
+          alert("Napaka pri označevanju dobropisa kot neplačan")
         }
       }
     }
@@ -132,7 +131,7 @@ export default function CreditNoteViewPage() {
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              creditNote.status === 'processed' 
+                              creditNote.status === 'paid' 
                                 ? 'bg-green-100 text-green-800'
                                 : creditNote.status === 'sent'
                                 ? 'bg-blue-100 text-blue-800'
@@ -140,35 +139,38 @@ export default function CreditNoteViewPage() {
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
-                              {creditNote.status === 'processed' ? 'Obdelan' : 
+                              {creditNote.status === 'paid' ? 'Plačan' : 
                                creditNote.status === 'sent' ? 'Poslan' : 
                                creditNote.status === 'cancelled' ? 'Preklican' : 'Osnutek'}
                             </span>
-                            {creditNote.status === 'processed' && (
+                            {creditNote.status === 'paid' && (
                               <CheckCircle className="h-4 w-4 text-green-600" />
+                            )}
+                            {creditNote.status === 'cancelled' && (
+                              <XCircle className="h-4 w-4 text-red-600" />
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {creditNote.status !== 'processed' && (
+                        {creditNote.status !== 'paid' && (
                           <Button 
                             variant="outline" 
-                            onClick={handleMarkAsProcessed} 
+                            onClick={handleMarkAsPaid} 
                             className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
                           >
                             <CheckCircle className="h-4 w-4" />
-                            Označi kot obdelan
+                            Označi kot plačan
                           </Button>
                         )}
-                        {creditNote.status === 'processed' && (
+                        {creditNote.status === 'paid' && (
                           <Button 
                             variant="outline" 
-                            onClick={handleMarkAsUnprocessed} 
+                            onClick={handleMarkAsUnpaid} 
                             className="gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                           >
                             <XCircle className="h-4 w-4" />
-                            Označi kot neobdelan
+                            Označi kot neplačan
                           </Button>
                         )}
                         <Button variant="outline" onClick={handleSaveAs} className="gap-2">
