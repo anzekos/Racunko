@@ -24,7 +24,7 @@ import {
   TrendingUp
 } from "lucide-react"
 import { fetchOffers, deleteOffer, updateOfferStatus, type SavedOffer } from "@/lib/database"
-import { generateOfferPDFFromElement } from "@/lib/offer-pdf-generator"
+import { generateOfferPDFFromElement } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -243,7 +243,6 @@ export default function OffersListPage() {
       sent: "bg-blue-100 text-blue-800",
       accepted: "bg-green-100 text-green-800",
       rejected: "bg-red-100 text-red-800",
-      cancelled: "bg-orange-100 text-orange-800",
     }
     
     const labels = {
@@ -251,7 +250,6 @@ export default function OffersListPage() {
       sent: "Poslana",
       accepted: "Sprejeta",
       rejected: "Zavrnjena",
-      cancelled: "Preklicana",
     }
 
     return (
@@ -286,7 +284,6 @@ export default function OffersListPage() {
           <div className="h-full overflow-y-auto">
             <div className="p-6">
               <div className="max-w-7xl mx-auto">
-                {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h1 className="text-2xl font-semibold text-foreground">Shranjene ponudbe</h1>
@@ -302,7 +299,6 @@ export default function OffersListPage() {
                   </Link>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4">
@@ -354,7 +350,6 @@ export default function OffersListPage() {
                   </Card>
                 </div>
 
-                {/* Search and Bulk Actions */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <Card className="flex-1">
                     <CardContent className="p-4">
@@ -398,7 +393,6 @@ export default function OffersListPage() {
                   )}
                 </div>
 
-                {/* Offers List */}
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -463,6 +457,9 @@ export default function OffersListPage() {
                                     )}
                                     {offer.status === 'draft' && (
                                       <Circle className="h-5 w-5 text-gray-400" />
+                                    )}
+                                    {offer.status === 'rejected' && (
+                                      <XCircle className="h-5 w-5 text-red-600" />
                                     )}
                                     Ponudba {offer.offerNumber}
                                   </h3>
@@ -567,7 +564,6 @@ export default function OffersListPage() {
         </main>
       </div>
 
-      {/* Skrita OfferPreview komponenta za generiranje PDF-jev */}
       {pdfOffer && (
         <div style={{ position: 'fixed', left: '-10000px', top: '0', width: '210mm', backgroundColor: 'white' }}>
           <OfferPreview
