@@ -1,3 +1,4 @@
+// app/credit-notes/list/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { 
-  FileMinus, 
+  FileText, 
   Download, 
   Mail, 
   Edit, 
@@ -17,8 +18,10 @@ import {
   Plus,
   CheckCircle,
   Circle,
+  XCircle,
   CheckSquare,
-  Square
+  Square,
+  Receipt
 } from "lucide-react"
 import { fetchCreditNotes, deleteCreditNote, updateCreditNoteStatus, type SavedCreditNote } from "@/lib/database"
 import { generateCreditNotePDFFromElement } from "@/lib/pdf-generator"
@@ -48,11 +51,10 @@ export default function CreditNotesListPage() {
     } else {
       const query = searchQuery.toLowerCase()
       const filtered = creditNotes.filter(
-        (cn) =>
-          cn.creditNoteNumber.toLowerCase().includes(query) ||
-          cn.customer.Stranka?.toLowerCase().includes(query) ||
-          cn.status.toLowerCase().includes(query) ||
-          cn.originalInvoiceNumber?.toLowerCase().includes(query)
+        (creditNote) =>
+          creditNote.creditNoteNumber.toLowerCase().includes(query) ||
+          creditNote.customer.Stranka?.toLowerCase().includes(query) ||
+          creditNote.status.toLowerCase().includes(query)
       )
       setFilteredCreditNotes(filtered)
     }
@@ -83,15 +85,27 @@ export default function CreditNotesListPage() {
     if (selectedCreditNotes.length === filteredCreditNotes.length) {
       setSelectedCreditNotes([])
     } else {
-      setSelectedCreditNotes(filteredCreditNotes.map(cn => cn.id!))
+      setSelectedCreditNotes(filteredCreditNotes.map(creditNote => creditNote.id!))
     }
+  }
+
+  const isCreditNoteSelected = (creditNoteId: string) => {
+    return selectedCreditNotes.includes(creditNoteId)
+  }
+
+  const isAllSelected = () => {
+    return filteredCreditNotes.length > 0 && selectedCreditNotes.length === filteredCreditNotes.length
+  }
+
+  const isSomeSelected = () => {
+    return selectedCreditNotes.length > 0 && selectedCreditNotes.length < filteredCreditNotes.length
   }
 
   const handleBulkDownload = async () => {
     if (selectedCreditNotes.length === 0) return
 
     setIsBulkDownloading(true)
-    const selectedCreditNoteData = creditNotes.filter(cn => selectedCreditNotes.includes(cn.id!))
+    const selectedCreditNoteData = creditNotes.filter(creditNote => selectedCreditNotes.includes(creditNote.id!))
 
     try {
       for (const creditNote of selectedCreditNoteData) {
@@ -146,6 +160,7 @@ export default function CreditNotesListPage() {
       try {
         const element = document.getElementById('credit-note-preview-content')
         if (!element) {
+          console.error('Element not found!')
           throw new Error('Preview element not found')
         }
 
@@ -160,7 +175,7 @@ export default function CreditNotesListPage() {
         URL.revokeObjectURL(url)
       } catch (error) {
         console.error('Napaka pri prenosu PDF-ja:', error)
-        alert('Napaka pri prenosu PDF-ja')
+        alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
       } finally {
         setPdfCreditNote(null)
       }
@@ -172,7 +187,7 @@ export default function CreditNotesListPage() {
       try {
         await deleteCreditNote(id)
         await loadCreditNotes()
-        setSelectedCreditNotes(prev => prev.filter(cnId => cnId !== id))
+        setSelectedCreditNotes(prev => prev.filter(creditNoteId => creditNoteId !== id))
       } catch (error) {
         console.error("Error deleting credit note:", error)
         alert("Napaka pri brisanju dobropisa")
@@ -194,14 +209,26 @@ export default function CreditNotesListPage() {
     }
   }
 
-  const handleMarkAsProcessed = async (creditNoteId: string, creditNoteNumber: string) => {
-    if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNoteNumber} kot obdelan?`)) {
+  const handleMarkAsPaid = async (creditNoteId: string, creditNoteNumber: string) => {
+    if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNoteNumber} kot plačan?`)) {
       try {
-        await updateCreditNoteStatus(creditNoteId, 'processed')
+        await updateCreditNoteStatus(creditNoteId, 'paid')
         await loadCreditNotes()
       } catch (error) {
-        console.error("Error marking credit note as processed:", error)
-        alert("Napaka pri označevanju dobropisa")
+        console.error("Error marking credit note as paid:", error)
+        alert("Napaka pri označevanju dobropisa kot plačan")
+      }
+    }
+  }
+
+  const handleMarkAsUnpaid = async (creditNoteId: string, creditNoteNumber: string) => {
+    if (confirm(`Ali ste prepričani, da želite označiti dobropis ${creditNoteNumber} kot neplačan?`)) {
+      try {
+        await updateCreditNoteStatus(creditNoteId, 'sent')
+        await loadCreditNotes()
+      } catch (error) {
+        console.error("Error marking credit note as unpaid:", error)
+        alert("Napaka pri označevanju dobropisa kot neplačan")
       }
     }
   }
@@ -214,14 +241,14 @@ export default function CreditNotesListPage() {
     const badges = {
       draft: "bg-gray-100 text-gray-800",
       sent: "bg-blue-100 text-blue-800",
-      processed: "bg-green-100 text-green-800",
+      paid: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
     }
     
     const labels = {
       draft: "Osnutek",
       sent: "Poslan",
-      processed: "Obdelan",
+      paid: "Plačan",
       cancelled: "Preklican",
     }
 
@@ -230,6 +257,20 @@ export default function CreditNotesListPage() {
         {labels[status as keyof typeof labels]}
       </span>
     )
+  }
+
+  const getCreditNoteCardClass = (status: string) => {
+    const baseClass = "border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+    
+    if (status === 'paid') {
+      return `${baseClass} bg-green-50 border-green-200`
+    } else if (status === 'sent') {
+      return `${baseClass} bg-blue-50 border-blue-200`
+    } else if (status === 'cancelled') {
+      return `${baseClass} bg-red-50 border-red-200`
+    }
+    
+    return baseClass
   }
 
   return (
@@ -247,7 +288,7 @@ export default function CreditNotesListPage() {
                   <div>
                     <h1 className="text-2xl font-semibold text-foreground">Shranjeni dobropisi</h1>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Pregled in upravljanje vseh dobropisov
+                      Pregled in upravljanje vseh izdanih dobropisov
                     </p>
                   </div>
                   <Link href="/credit-notes">
@@ -258,7 +299,6 @@ export default function CreditNotesListPage() {
                   </Link>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4">
@@ -267,7 +307,7 @@ export default function CreditNotesListPage() {
                           <p className="text-sm text-muted-foreground">Vsi dobropisi</p>
                           <p className="text-2xl font-semibold">{creditNotes.length}</p>
                         </div>
-                        <FileMinus className="h-8 w-8 text-primary opacity-20" />
+                        <Receipt className="h-8 w-8 text-primary opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
@@ -277,10 +317,10 @@ export default function CreditNotesListPage() {
                         <div>
                           <p className="text-sm text-muted-foreground">Osnutki</p>
                           <p className="text-2xl font-semibold">
-                            {creditNotes.filter(cn => cn.status === 'draft').length}
+                            {creditNotes.filter(i => i.status === 'draft').length}
                           </p>
                         </div>
-                        <Circle className="h-8 w-8 text-gray-500 opacity-20" />
+                        <FileText className="h-8 w-8 text-gray-500 opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
@@ -288,9 +328,9 @@ export default function CreditNotesListPage() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-muted-foreground">Obdelani</p>
+                          <p className="text-sm text-muted-foreground">Plačani</p>
                           <p className="text-2xl font-semibold">
-                            {creditNotes.filter(cn => cn.status === 'processed').length}
+                            {creditNotes.filter(i => i.status === 'paid').length}
                           </p>
                         </div>
                         <CheckCircle className="h-8 w-8 text-green-500 opacity-20" />
@@ -310,7 +350,6 @@ export default function CreditNotesListPage() {
                   </Card>
                 </div>
 
-                {/* Search and Bulk Actions */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <Card className="flex-1">
                     <CardContent className="p-4">
@@ -354,25 +393,28 @@ export default function CreditNotesListPage() {
                   )}
                 </div>
 
-                {/* Credit Notes List */}
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Dobropisi ({filteredCreditNotes.length})</CardTitle>
                       {filteredCreditNotes.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={toggleSelectAll}
-                          className="flex items-center gap-2"
-                        >
-                          {selectedCreditNotes.length === filteredCreditNotes.length ? (
-                            <CheckSquare className="h-4 w-4 text-primary" />
-                          ) : (
-                            <Square className="h-4 w-4 border-2 border-muted-foreground rounded" />
-                          )}
-                          {selectedCreditNotes.length === filteredCreditNotes.length ? "Počisti vse" : "Izberi vse"}
-                        </Button>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleSelectAll}
+                            className="flex items-center gap-2"
+                          >
+                            {isAllSelected() ? (
+                              <CheckSquare className="h-4 w-4 text-primary" />
+                            ) : isSomeSelected() ? (
+                              <Square className="h-4 w-4 border-2 border-muted-foreground rounded" />
+                            ) : (
+                              <Square className="h-4 w-4 border-2 border-muted-foreground rounded" />
+                            )}
+                            {isAllSelected() ? "Počisti vse" : "Izberi vse"}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </CardHeader>
@@ -388,8 +430,8 @@ export default function CreditNotesListPage() {
                         {filteredCreditNotes.map((creditNote) => (
                           <div
                             key={creditNote.id}
-                            className={`border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors ${
-                              selectedCreditNotes.includes(creditNote.id!) ? 'ring-2 ring-primary ring-opacity-50' : ''
+                            className={`${getCreditNoteCardClass(creditNote.status)} ${
+                              isCreditNoteSelected(creditNote.id!) ? 'ring-2 ring-primary ring-opacity-50' : ''
                             }`}
                           >
                             <div className="flex items-start gap-4">
@@ -397,7 +439,7 @@ export default function CreditNotesListPage() {
                                 onClick={() => toggleCreditNoteSelection(creditNote.id!)}
                                 className="mt-1 flex-shrink-0"
                               >
-                                {selectedCreditNotes.includes(creditNote.id!) ? (
+                                {isCreditNoteSelected(creditNote.id!) ? (
                                   <CheckSquare className="h-5 w-5 text-primary" />
                                 ) : (
                                   <Square className="h-5 w-5 text-muted-foreground opacity-60" />
@@ -406,7 +448,19 @@ export default function CreditNotesListPage() {
                               
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="font-semibold text-lg">
+                                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                                    {creditNote.status === 'paid' && (
+                                      <CheckCircle className="h-5 w-5 text-green-600" />
+                                    )}
+                                    {creditNote.status === 'sent' && (
+                                      <Mail className="h-5 w-5 text-blue-600" />
+                                    )}
+                                    {creditNote.status === 'draft' && (
+                                      <Circle className="h-5 w-5 text-gray-400" />
+                                    )}
+                                    {creditNote.status === 'cancelled' && (
+                                      <XCircle className="h-5 w-5 text-red-600" />
+                                    )}
                                     Dobropis {creditNote.creditNoteNumber}
                                   </h3>
                                   {getStatusBadge(creditNote.status)}
@@ -420,14 +474,12 @@ export default function CreditNotesListPage() {
                                     {new Date(creditNote.issueDate).toLocaleDateString("sl-SI")}
                                   </div>
                                   <div>
-                                    <strong>Znesek:</strong> <span className="text-red-600">-{creditNote.totalPayable.toFixed(2)} EUR</span>
+                                    <strong>Znesek:</strong> {creditNote.totalPayable.toFixed(2)} EUR
                                   </div>
                                 </div>
-                                {creditNote.originalInvoiceNumber && (
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    <strong>Izvirni račun:</strong> {creditNote.originalInvoiceNumber}
-                                  </div>
-                                )}
+                                <div className="text-xs text-muted-foreground mt-2">
+                                  Ustvarjeno: {new Date(creditNote.createdAt).toLocaleString("sl-SI")}
+                                </div>
                               </div>
                               <div className="flex gap-2 ml-4 flex-shrink-0">
                                 <Button
@@ -462,18 +514,30 @@ export default function CreditNotesListPage() {
                                   size="sm"
                                   onClick={() => handleEmail(creditNote)}
                                   className="gap-2"
+                                  title={creditNote.status === 'draft' ? "Pošlji e-pošto in označi kot poslan" : "Pošlji e-pošto"}
                                 >
                                   <Mail className="h-4 w-4" />
                                 </Button>
                                 
-                                {creditNote.status !== 'processed' && (
+                                {creditNote.status !== 'paid' ? (
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleMarkAsProcessed(creditNote.id!, creditNote.creditNoteNumber)}
+                                    onClick={() => handleMarkAsPaid(creditNote.id!, creditNote.creditNoteNumber)}
                                     className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    title="Označi kot plačan"
                                   >
                                     <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleMarkAsUnpaid(creditNote.id!, creditNote.creditNoteNumber)}
+                                    className="gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                    title="Označi kot neplačan"
+                                  >
+                                    <XCircle className="h-4 w-4" />
                                   </Button>
                                 )}
                                 
@@ -499,7 +563,6 @@ export default function CreditNotesListPage() {
         </main>
       </div>
 
-      {/* Hidden preview for PDF generation */}
       {pdfCreditNote && (
         <div style={{ position: 'fixed', left: '-10000px', top: '0', width: '210mm', backgroundColor: 'white' }}>
           <CreditNotePreview
