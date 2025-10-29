@@ -75,6 +75,17 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
     footerElements.forEach(footer => footer.remove())
     
+    // Zmanjšamo vse font-sizes v kloniranem elementu
+    const allTextElements = clonedElement.querySelectorAll('*')
+    allTextElements.forEach(el => {
+      const element = el as HTMLElement
+      const computedStyle = window.getComputedStyle(element)
+      const currentSize = parseFloat(computedStyle.fontSize)
+      if (currentSize > 10) {
+        element.style.fontSize = `${Math.max(8, currentSize * 0.85)}px`
+      }
+    })
+    
     // Ustvarimo začasen div
     const tempDiv = document.createElement('div')
     tempDiv.style.position = 'fixed'
@@ -84,7 +95,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     tempDiv.style.overflow = 'visible'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '10pt' // Zmanjšano iz 12pt
+    tempDiv.style.fontSize = '10pt' // Zmanjšan default font
     tempDiv.style.padding = '0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
@@ -99,7 +110,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       normalizeColors(element)
     })
 
-    // Ustvarimo canvas z zmanjšanim scale za manjšo velikost datoteke
+    // Ustvarimo canvas z optimizacijo za manjšo velikost
     const canvas = await html2canvas(tempDiv, {
       scale: 1.5, // Zmanjšano iz 2 za manjšo velikost
       useCORS: true,
@@ -108,6 +119,8 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       logging: false,
       width: tempDiv.scrollWidth,
       height: tempDiv.scrollHeight,
+      imageTimeout: 0,
+      removeContainer: true,
       onclone: (clonedDoc) => {
         const clonedElements = clonedDoc.querySelectorAll('*')
         clonedElements.forEach(el => {
@@ -123,9 +136,9 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       (btn as HTMLElement).style.display = ''
     })
 
-    // Ustvarimo PDF
-    // Uporabljamo JPEG namesto PNG za manjšo velikost
-    const imgData = canvas.toDataURL('image/jpeg', 0.85) // JPEG z 85% kvaliteto namesto PNG
+    // Ustvarimo PDF z optimizacijo
+    const imgData = canvas.toDataURL('image/jpeg', 0.7) // JPEG z 70% kakovostjo namesto PNG
+    
     const pdf = new jsPDF('p', 'mm', 'a4')
     
     const pdfWidth = pdf.internal.pageSize.getWidth()
@@ -139,7 +152,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
-      pdf.addImage(imgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST') // JPEG s hitro kompresijo
+      pdf.addImage(imgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
     } else {
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
@@ -162,10 +175,10 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
 }
 
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
-  // Default ime PDF: "Ime stranke + št. računa"
-  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
-  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
-  const filename = `${customerName}-${invoiceNum}.pdf`
+  // Ustvarimo ime datoteke: "Ime stranke + št. računa"
+  const customerName = invoice.customer.Stranka?.replace(/[^a-zA-Z0-9čšžČŠŽ\s]/g, "-") || 'stranka'
+  const invoiceNumber = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
+  const filename = `${customerName} ${invoiceNumber}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
