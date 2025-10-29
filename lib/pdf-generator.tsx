@@ -130,7 +130,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const imgData = canvas.toDataURL('image/png')
     
     // Kompresija PNG slike
-    const compressedImgData = await compressPNG(imgData, 0.7) // 70% kvalitete
+    const compressedImgData = await compressPNG(imgData, 0.95) // 70% kvalitete
     
     const pdf = new jsPDF('p', 'mm', 'a4', true) // true = compress PDF
     
