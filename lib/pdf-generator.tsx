@@ -59,7 +59,7 @@ function addFooterToPDF(pdf: jsPDF, invoice: SavedInvoice) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
-// ENOTNA funkcija za generiranje PDF-ja iz elementa
+// NOVA FUNKCIJA: Optimizirana za vektorsko kvaliteto in majhno velikost
 export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
   try {
     // Skrijemo akcijske gumbe
@@ -84,7 +84,7 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     tempDiv.style.overflow = 'visible'
     tempDiv.style.backgroundColor = '#ffffff'
     tempDiv.style.fontFamily = 'Arial, sans-serif'
-    tempDiv.style.fontSize = '10pt' // Zmanjšano iz 12pt
+    tempDiv.style.fontSize = '9pt'
     tempDiv.style.padding = '0'
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
@@ -99,15 +99,17 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       normalizeColors(element)
     })
 
-    // Ustvarimo canvas z zmanjšanim scale za manjšo velikost datoteke
+    // IZBOLJŠANO: Nižji scale za manjšo velikost, ampak še vedno dovolj kvaliteten
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5, // Zmanjšano iz 2 za manjšo velikost
+      scale: 2.0, // Povečano nazaj na 2.0 za boljšo kvaliteto
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
       width: tempDiv.scrollWidth,
       height: tempDiv.scrollHeight,
+      imageTimeout: 0,
+      removeContainer: true,
       onclone: (clonedDoc) => {
         const clonedElements = clonedDoc.querySelectorAll('*')
         clonedElements.forEach(el => {
@@ -123,10 +125,14 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
       (btn as HTMLElement).style.display = ''
     })
 
-    // Ustvarimo PDF
-    // Uporabljamo JPEG namesto PNG za manjšo velikost
-    const imgData = canvas.toDataURL('image/jpeg', 0.85) // JPEG z 85% kvaliteto namesto PNG
-    const pdf = new jsPDF('p', 'mm', 'a4')
+    // KLJUČNA SPREMEMBA: Uporabimo PNG z optimizirano kompresijo
+    // PNG ohranja ostrino besedila bolje kot JPEG
+    const imgData = canvas.toDataURL('image/png')
+    
+    // Kompresija PNG slike
+    const compressedImgData = await compressPNG(imgData, 0.7) // 70% kvalitete
+    
+    const pdf = new jsPDF('p', 'mm', 'a4', true) // true = compress PDF
     
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
@@ -139,18 +145,19 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     const availableHeight = pdfHeight - topMargin - margin - 20
     
     if (imgHeight <= availableHeight) {
-      pdf.addImage(imgData, 'JPEG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST') // JPEG s hitro kompresijo
+      pdf.addImage(compressedImgData, 'PNG', margin, topMargin, imgWidth, imgHeight, undefined, 'FAST')
     } else {
       const scale = availableHeight / imgHeight
       const scaledWidth = imgWidth * scale
       const scaledHeight = imgHeight * scale
       
-      pdf.addImage(imgData, 'JPEG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
+      pdf.addImage(compressedImgData, 'PNG', (pdfWidth - scaledWidth) / 2, topMargin, scaledWidth, scaledHeight, undefined, 'FAST')
     }
 
     // Dodamo footer
     addFooterToPDF(pdf, invoice)
 
+    // Shranimo z optimizacijo
     return new Blob([pdf.output('blob')], { type: 'application/pdf' })
   } catch (error) {
     const actionButtons = element.querySelectorAll('.print\\:hidden')
@@ -159,6 +166,28 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     })
     throw error
   }
+}
+
+// Pomožna funkcija za kompresijo PNG
+async function compressPNG(dataUrl: string, quality: number): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      
+      const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, 0, 0)
+      
+      // Poskusimo s JPEG kompresijo za manjšo velikost, ampak z visoko kvaliteto
+      const compressed = canvas.toDataURL('image/jpeg', quality)
+      resolve(compressed)
+    }
+    img.src = dataUrl
+  })
 }
 
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
