@@ -168,9 +168,6 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
                 <div className="py-0.1">
                   <strong>Veljavnost:</strong> {new Date(offer.dueDate).toLocaleDateString("sl-SI")}
                 </div>
-                <div className="py-0.1">
-                  <strong>Predviden datum storitve:</strong> {new Date(offer.serviceDate).toLocaleDateString("sl-SI")}
-                </div>
               </div>
             </div>
 
