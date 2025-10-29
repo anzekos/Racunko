@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db-connection'
 
+// GET - pridobi vse dobropise
 export async function GET() {
   try {
     const creditNotes = await query(
@@ -61,10 +62,12 @@ export async function GET() {
   }
 }
 
+// POST - ustvari nov dobropis
 export async function POST(request: NextRequest) {
   try {
     const creditNote = await request.json()
 
+    // Preveri ali dobropis s to številko že obstaja
     const existing = await query(
       'SELECT id FROM CreditNotes WHERE credit_note_number = ?',
       [creditNote.creditNoteNumber]
@@ -77,6 +80,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Vstavi dobropis
     const result = await query(
       `INSERT INTO CreditNotes (
         credit_note_number, customer_id, service_description,
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
 
     const creditNoteId = result.insertId
 
+    // Vstavi postavke
     for (const item of creditNote.items) {
       await query(
         `INSERT INTO CreditNoteItems (
