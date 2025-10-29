@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { OfferPreview } from "@/components/offer-preview"
 import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
 import { fetchOfferById, type SavedOffer, updateOfferStatus } from "@/lib/database"
-import { downloadOfferPDF } from "@/lib/offer-pdf-generator"
+import { downloadOfferPDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
 export default function OfferViewPage() {
@@ -41,7 +41,7 @@ export default function OfferViewPage() {
 
   const handleDownloadPDF = () => {
     if (offer) {
-      downloadOfferPDF(offer)
+      downloadOfferPDFFromPreview(offer)
     }
   }
 
@@ -88,24 +88,10 @@ export default function OfferViewPage() {
       if (confirm(`Ali ste prepričani, da želite označiti ponudbo ${offer.offerNumber} kot zavrnjeno?`)) {
         try {
           await updateOfferStatus(offer.id!, 'rejected')
-          await loadOffer(offer.id!)
+          loadOffer(offer.id!)
         } catch (error) {
           console.error("Error marking offer as rejected:", error)
           alert("Napaka pri označevanju ponudbe kot zavrnjene")
-        }
-      }
-    }
-  }
-
-  const handleMarkAsSent = async () => {
-    if (offer) {
-      if (confirm(`Ali ste prepričani, da želite označiti ponudbo ${offer.offerNumber} kot poslano?`)) {
-        try {
-          await updateOfferStatus(offer.id!, 'sent')
-          await loadOffer(offer.id!)
-        } catch (error) {
-          console.error("Error marking offer as sent:", error)
-          alert("Napaka pri označevanju ponudbe kot poslane")
         }
       }
     }
@@ -154,7 +140,7 @@ export default function OfferViewPage() {
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                               {offer.status === 'accepted' ? 'Sprejeta' : 
-                               offer.status === 'sent' ? 'Poslana' :
+                               offer.status === 'sent' ? 'Poslana' : 
                                offer.status === 'rejected' ? 'Zavrnjena' : 'Osnutek'}
                             </span>
                             {offer.status === 'accepted' && (
@@ -167,15 +153,6 @@ export default function OfferViewPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {offer.status === 'draft' && (
-                          <Button 
-                            variant="outline" 
-                            onClick={handleMarkAsSent} 
-                            className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            Označi kot poslano
-                          </Button>
-                        )}
                         {offer.status !== 'accepted' && offer.status !== 'rejected' && (
                           <>
                             <Button 
