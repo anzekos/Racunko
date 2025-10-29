@@ -68,10 +68,6 @@ Podatki o ponudbi:
 Prosimo vas za pregled ponudbe. Za dodatna pojasnila smo vam na voljo.
 
 Hvala za sodelovanje in lep pozdrav.
-
---
-2KM Consulting d.o.o.
-E: 2km.consulting@2km.si
     `.trim()
 
     const emailData: EmailData = {
@@ -83,7 +79,7 @@ E: 2km.consulting@2km.si
     console.log("Sending email:", emailData)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const mailtoLink = `mailto:${email}?cc=2km.consulting@2km.si&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     window.open(mailtoLink, "_blank")
 
     return true
@@ -127,12 +123,8 @@ Podatki o ponudbi:
 Prosimo vas za pregled ponudbe. Za dodatna pojasnila smo vam na voljo.
 
 Hvala za sodelovanje in lep pozdrav.
-
---
-2KM Consulting d.o.o.
-E: 2km.consulting@2km.si
   `.trim()
 
-  const mailtoLink = `mailto:${email}?cc=2km.consulting@2km.si&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   window.open(mailtoLink, "_blank")
 }
