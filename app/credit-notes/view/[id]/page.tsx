@@ -10,7 +10,7 @@ import { CreditNotePreview } from "@/components/credit-note-preview"
 import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
 import { fetchCreditNoteById, type SavedCreditNote, updateCreditNoteStatus } from "@/lib/database"
 import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
-import { openEmailClient } from "@/lib/email-service"
+import { openEmailClient, sendCreditNoteEmail } from "@/lib/email-service-credit-note"
 
 export default function CreditNoteViewPage() {
   const params = useParams()
