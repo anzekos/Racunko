@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Download, Mail, Printer } from "lucide-react"
 import type { CreditNote } from "@/lib/database"
 import Image from "next/image"
-import { downloadCreditNotePDFFromPreview } from "@/lib/pdf-generator"
+import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
 import { openEmailClient } from "@/lib/email-service"
 
 const formatNumber = (value: number): string => {
