@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FileText, ArrowLeft, Copy, Receipt } from "lucide-react"
 import { fetchCustomers, fetchCreditNotes, saveCreditNote, updateCreditNote, type Customer, type CreditNote, type SavedCreditNote } from "@/lib/database"
-import { downloadCreditNotePDF } from "@/lib/pdf-generator"
+import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
 import { openEmailClient } from "@/lib/email-service"
 import { Suspense } from "react"
 
