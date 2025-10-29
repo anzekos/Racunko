@@ -1,353 +1,291 @@
-// components/credit-note-form.tsx
+// components/credit-note-preview.tsx
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2, Calculator, Loader2, Copy } from "lucide-react"
-import type { Customer, InvoiceItem, SavedCreditNote, CreditNote } from "@/lib/database"
-import { CustomerAutocomplete } from "@/components/invoice-form"
+import { Download, Mail, Printer } from "lucide-react"
+import type { CreditNote } from "@/lib/database"
+import Image from "next/image"
+import { downloadCreditNotePDFFromPreview } from "@/lib/pdf-generator"
+import { openEmailClient } from "@/lib/email-service"
 
-interface CreditNoteFormProps {
-  customers: Customer[]
-  onCreditNoteCreate: (creditNote: CreditNote, isSaveAs?: boolean) => void
-  onSaveAs?: () => void
-  loading: boolean
-  saving?: boolean
-  editingCreditNote?: SavedCreditNote | null
-  saveAsMode?: boolean
+const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value)
 }
 
-export function CreditNoteForm({ 
-  customers, 
-  onCreditNoteCreate, 
-  onSaveAs,
-  loading, 
-  saving, 
-  editingCreditNote,
-  saveAsMode = false 
-}: CreditNoteFormProps) {
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [creditNoteNumber, setCreditNoteNumber] = useState("")
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0])
-  const [dueDate, setDueDate] = useState("")
-  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split("T")[0])
-  const [serviceDescription, setServiceDescription] = useState("")
-  const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, price: 0, total: 0 }])
+interface CreditNotePreviewProps {
+  creditNote: CreditNote
+  onDownload: () => void
+  onSendEmail: () => void
+}
 
-  useEffect(() => {
-    if (editingCreditNote) {
-      setSelectedCustomer(editingCreditNote.customer)
-      setCreditNoteNumber(editingCreditNote.creditNoteNumber)
-      setIssueDate(editingCreditNote.issueDate)
-      setDueDate(editingCreditNote.dueDate)
-      setServiceDate(editingCreditNote.serviceDate)
-      setServiceDescription(editingCreditNote.serviceDescription)
-      setItems(editingCreditNote.items.length > 0 ? editingCreditNote.items : [{ description: "", quantity: 1, price: 0, total: 0 }])
-      
-      if (saveAsMode) {
-        setCreditNoteNumber("")
-      }
-    }
-  }, [editingCreditNote, saveAsMode])
-
-  useEffect(() => {
-    if (issueDate) {
-      const issue = new Date(issueDate)
-      const due = new Date(issue)
-      due.setDate(due.getDate() + 30)
-      setDueDate(due.toISOString().split("T")[0])
-    }
-  }, [issueDate])
-
-  const addItem = () => {
-    setItems([...items, { description: "", quantity: 1, price: 0, total: 0 }])
+export function CreditNotePreview({ creditNote, onDownload, onSendEmail }: CreditNotePreviewProps) {
+  const handlePrint = () => {
+    window.print()
   }
 
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index))
-    }
+  const handleDirectDownload = () => {
+    downloadCreditNotePDFFromPreview(creditNote, 'credit-note-preview-content')
   }
 
-  const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
-    const newItems = [...items]
-    newItems[index] = { ...newItems[index], [field]: value }
-
-    if (field === "quantity" || field === "price") {
-      newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
-    }
-
-    setItems(newItems)
-  }
-
-  const totalWithoutVat = items.reduce((sum, item) => sum + item.total, 0)
-  const vat = totalWithoutVat * 0.22
-  const totalPayable = totalWithoutVat + vat
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!selectedCustomer || !creditNoteNumber || items.some((item) => !item.description)) {
-      alert("Prosimo, izpolnite vsa obvezna polja")
-      return
-    }
-
-    const creditNote: CreditNote = {
-      id: editingCreditNote?.id,
-      creditNoteNumber,
-      customer: selectedCustomer,
-      items: items.filter((item) => item.description.trim() !== ""),
-      serviceDescription,
-      issueDate,
-      dueDate,
-      serviceDate,
-      totalWithoutVat,
-      vat,
-      totalPayable,
-    }
-
-    onCreditNoteCreate(creditNote, saveAsMode)
-  }
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Nalagam podatke o strankah...</div>
-        </CardContent>
-      </Card>
-    )
+  const handleDirectEmail = () => {
+    openEmailClient(creditNote, 'credit-note')
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Podatki o stranki</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Podjetje *</Label>
-              <CustomerAutocomplete
-                customers={customers}
-                onCustomerSelect={setSelectedCustomer}
-                selectedCustomer={selectedCustomer}
-              />
-            </div>
+    <div className="space-y-6">
+      <style jsx>{`
+        @media print {
+          .credit-note-preview-content {
+            font-size: 12pt !important;
+            font-family: Arial, sans-serif !important;
+          }
+          .credit-note-title {
+            font-size: 12pt !important;
+            font-weight: bold !important;
+          }
+          .credit-note-customer-name {
+            font-size: 14pt !important;
+            font-weight: bold !important;
+          }
+          .credit-note-company-info {
+            font-size: 9pt !important;
+          }
+          .credit-note-section-title {
+            font-size: 12pt !important;
+            font-weight: bold !important;
+          }
+          .credit-note-table {
+            font-size: 9pt !important;
+          }
+          .credit-note-table-header {
+            font-size: 9pt !important;
+            font-weight: bold !important;
+          }
+          .credit-note-total {
+            font-size: 10pt !important;
+            font-weight: bold !important;
+          }
+          .credit-note-footer {
+            font-size: 8pt !important;
+          }
+          .credit-note-payment-info {
+            font-size: 11pt !important;
+          }
+          .podpis {
+            font-size: 8pt !important;
+          }
+        }
+        
+        .credit-note-preview-content {
+          font-family: Arial, sans-serif;
+        }
+        .credit-note-title {
+          font-size: 1.2rem;
+          font-weight: bold;
+        }
+        .credit-note-customer-name {
+          font-size: 1.125rem;
+          font-weight: bold;
+        }
+        .credit-note-company-info {
+          font-size: 0.75rem;
+        }
+        .credit-note-section-title {
+          font-size: 0.875rem;
+          font-weight: bold;
+        }
+        .credit-note-table {
+          font-size: 0.8rem;
+        }
+        .credit-note-table-header {
+          font-size: 0.8rem;
+          font-weight: bold;
+        }
+        .credit-note-total {
+          font-size: 0.85rem;
+          font-weight: bold;
+        }
+        .credit-note-footer {
+          font-size: 0.7rem;
+        }
+        .credit-note-payment-info {
+          font-size: 0.875rem;
+        }
+      `}</style>
 
-            {selectedCustomer && (
-              <div className="space-y-2 p-4 bg-muted rounded-lg">
-                <div>
-                  <strong>Naslov:</strong> {selectedCustomer.Naslov}
-                </div>
-                <div>
-                  <strong>Kraj:</strong> {selectedCustomer.Kraj_postna_st}
-                </div>
-                <div>
-                  <strong>E-pošta:</strong> {selectedCustomer.email}
-                </div>
-                <div>
-                  <strong>ID za DDV:</strong> {selectedCustomer.ID_DDV}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Podatki o dobropisu</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="credit-note-number">Številka dobropisa *</Label>
-              <Input
-                id="credit-note-number"
-                value={creditNoteNumber}
-                onChange={(e) => setCreditNoteNumber(e.target.value)}
-                placeholder={saveAsMode ? "Vnesite novo številko dobropisa..." : "npr. D-2024-001"}
-                required
-              />
-              {saveAsMode && (
-                <p className="text-sm text-muted-foreground">
-                  Vnesite novo številko dobropisa za kopijo
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="issue-date">Datum izdaje</Label>
-                <Input id="issue-date" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="due-date">Valuta</Label>
-                <Input id="due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="service-date">Datum opravljene storitve</Label>
-              <Input
-                id="service-date"
-                type="date"
-                value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Razlog za dobropis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Vnesite razlog za izdajo dobropisa..."
-            value={serviceDescription}
-            onChange={(e) => setServiceDescription(e.target.value)}
-            rows={3}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Postavke dobropisa
-            <Button type="button" onClick={addItem} size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Dodaj postavko
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {items.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-4 items-end">
-                <div className="col-span-5 space-y-2">
-                  <Label>Postavka</Label>
-                  <Input
-                    placeholder="Opis postavke"
-                    value={item.description}
-                    onChange={(e) => updateItem(index, "description", e.target.value)}
-                  />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label>Količina</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
-                  />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label>Cena (EUR)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.price}
-                    onChange={(e) => updateItem(index, "price", Number(e.target.value))}
-                  />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label>Skupaj (EUR)</Label>
-                  <Input type="number" value={item.total.toFixed(2)} readOnly className="bg-muted" />
-                </div>
-                <div className="col-span-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeItem(index)}
-                    disabled={items.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 space-y-2 border-t pt-4">
-            <div className="flex justify-between">
-              <span>Skupaj brez DDV:</span>
-              <span className="font-medium">{totalWithoutVat.toFixed(2)} EUR</span>
-            </div>
-            <div className="flex justify-between">
-              <span>DDV (22%):</span>
-              <span className="font-medium">{vat.toFixed(2)} EUR</span>
-            </div>
-            <div className="flex justify-between text-lg font-semibold border-t pt-2">
-              <span>Skupaj za vračilo:</span>
-              <span>{totalPayable.toFixed(2)} EUR</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-4 pt-6 border-t">
-        <Button 
-          type="submit"
-          size="lg" 
-          className="gap-2 flex-1" 
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Shranjujem...
-            </>
-          ) : (
-            <>
-              <Calculator className="h-4 w-4" />
-              {editingCreditNote 
-                ? (saveAsMode ? "Shrani kot nov dobropis" : "Posodobi dobropis")
-                : "Generiraj dobropis"
-              }
-            </>
-          )}
+      <div className="flex justify-end gap-2 print:hidden">
+        <Button variant="outline" onClick={handlePrint} className="gap-2 bg-transparent">
+          <Printer className="h-4 w-4" />
+          Natisni
         </Button>
-        
-        {editingCreditNote && !saveAsMode && onSaveAs && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onSaveAs}
-            disabled={saving}
-            className="gap-2"
-            size="lg"
-          >
-            <Copy className="h-4 w-4" />
-            Shrani kot nov
-          </Button>
-        )}
-        
-        {saveAsMode && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              window.location.href = `/credit-notes?edit=${editingCreditNote?.id}`
-            }}
-            disabled={saving}
-            size="lg"
-          >
-            Prekliči
-          </Button>
-        )}
+        <Button variant="outline" onClick={handleDirectDownload} className="gap-2 bg-transparent">
+          <Download className="h-4 w-4" />
+          Prenesi PDF
+        </Button>
+        <Button onClick={handleDirectEmail} className="gap-2">
+          <Mail className="h-4 w-4" />
+          Pošlji po e-pošti
+        </Button>
       </div>
-    </form>
+
+      <Card className="max-w-4xl mx-auto">
+        <CardContent id="credit-note-preview-content" className="p-8 print:p-0 credit-note-preview-content">
+          <div className="flex justify-end mb-6">
+            <div className="relative w-35 h-18">
+              <Image 
+                src="/images/2km-logo.png" 
+                alt="2KM Consulting Logo" 
+                fill 
+                className="object-contain"
+                priority
+                onError={(e) => {
+                  console.warn('Logo se ni naložil:', e)
+                }} 
+              />
+            </div>
+          </div>
+
+          <hr className="border-[#934435] border-1 mb-6" />
+
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="space-y-0 -my-1">
+              <div className="py-0.1"><strong>{creditNote.customer.Stranka}</strong></div>
+              <div className="py-0.1">{creditNote.customer.Naslov}</div>
+              <div className="py-0.1">{creditNote.customer.Kraj_postna_st}</div>
+              <div className="py-0.1">{creditNote.customer.email}</div>
+              <div className="py-0.1">
+                <strong>ID za DDV:</strong> {creditNote.customer.ID_DDV}
+              </div>
+
+              <div className="mt-6 space-y-0">
+                <div className="py-0.1">
+                  <strong>Ljubljana:</strong> {new Date(creditNote.issueDate).toLocaleDateString("sl-SI")}
+                </div>
+                <div className="py-0.1">
+                  <strong>Valuta:</strong> {new Date(creditNote.dueDate).toLocaleDateString("sl-SI")}
+                </div>
+                <div className="py-0.1">
+                  <strong>Datum opr. storitve:</strong> {new Date(creditNote.serviceDate).toLocaleDateString("sl-SI")}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right credit-note-company-info space-y-1">
+              <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
+              <div>Športna ulica 22, 1000 Ljubljana</div>
+              <div>MŠ: 6315992000</div>
+              <div>ID. št. za DDV: SI 10628169</div>
+              <div>Osnovni kapital: 7.500,00 EUR</div>
+              <div>Datum vpisa v SR: 13.2.2013, Okrožno sodišče Koper</div>
+              <div className="mt-2">Poslovni račun št:</div>
+              <div>IBAN: SI56 0223 6026 1489 640</div>
+              <div>Nova Ljubljanska banka d.d., Ljubljana</div>
+              <div>Trg republike 2, 1520 Ljubljana</div>
+              <div>SWIFT: LJBASI2X</div>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="text-xl">
+              <strong>Dobropis:</strong> {creditNote.creditNoteNumber}
+            </div>
+          </div>
+
+          <hr className="mb-6" />
+
+          {creditNote.serviceDescription && (
+            <div className="mb-6">
+              <h4 className="credit-note-section-title mb-2">Razlog za dobropis:</h4>
+              <div className="whitespace-pre-wrap">{creditNote.serviceDescription}</div>
+            </div>
+          )}
+
+          <div className="mb-8">
+            <table className="w-full border-collapse border border-gray-300 credit-note-table">
+              <thead>
+                <tr className="bg-[#f8ecec]">
+                  <th className="border border-gray-300 p-2 text-left credit-note-table-header">Postavka</th>
+                  <th className="border border-gray-300 p-2 text-right credit-note-table-header">Količina</th>
+                  <th className="border border-gray-300 p-2 text-right credit-note-table-header">Cena (EUR)</th>
+                  <th className="border border-gray-300 p-2 text-right credit-note-table-header">Skupaj (EUR)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {creditNote.items.map((item, index) => (
+                  <tr key={index}>
+                    <td className="border border-gray-300 p-2">{item.description}</td>
+                    <td className="border border-gray-300 p-2 text-right">{formatNumber(item.quantity)}</td>
+                    <td className="border border-gray-300 p-2 text-right">{formatNumber(item.price)}</td>
+                    <td className="border border-gray-300 p-2 text-right">{formatNumber(item.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="credit-note-total">
+                  <td colSpan={3} className="border border-gray-300 p-2 text-left">
+                    Skupaj brez DDV:
+                  </td>
+                  <td className="border border-gray-300 p-2 text-right">{formatNumber(creditNote.totalWithoutVat)}</td>
+                </tr>
+                <tr className="credit-note-total">
+                  <td colSpan={3} className="border border-gray-300 p-2 text-left">
+                    DDV (22%):
+                  </td>
+                  <td className="border border-gray-300 p-2 text-right">{formatNumber(creditNote.vat)}</td>
+                </tr>
+                <tr className="credit-note-total">
+                  <td colSpan={3} className="border border-gray-300 p-2 text-left">
+                    Skupaj za vračilo:
+                  </td>
+                  <td className="border border-gray-300 p-2 text-right">{formatNumber(creditNote.totalPayable)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div className="space-y-2 mb-8 credit-note-payment-info">
+            <div className="flex justify-between">
+              <span>Znesek vračila na TRR:</span>
+              <strong className="pr-80">SI56 0223 6026 1489 640</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>Pri vračilu se sklicujte na št. dobropisa:</span>
+              <strong className="pr-80">{creditNote.creditNoteNumber}</strong>
+            </div>
+            <div>Vračilo zneska bo izvedeno v roku 14 dni.</div>
+            <div className="mt-4 font-semibold">Hvala za sodelovanje!</div>
+          </div>
+
+          <div className="flex flex-col items-end gap-0">
+            <strong className="podpis text-sm mb-0.5">2KM Consulting d.o.o.</strong>
+            <div className="relative w-45 h-26">
+              <Image 
+                src="/images/signature-logo.png" 
+                alt="Signature" 
+                fill 
+                className="object-contain"
+                onError={(e) => {
+                  console.warn('Podpis se ni naložil:', e)
+                }} 
+              />
+            </div>
+          </div>
+
+          <div className="normal-footer">
+            <hr className="border-[#934435] border-1 mb-4" />
+            <div className="text-right credit-note-footer text-[#934435] space-y-2">
+              <div className="font-semibold">2KM Consulting d.o.o., podjetniško in poslovno svetovanje</div>
+              <div>Športna ulica 22, 1000 Ljubljana</div>
+              <div>DŠ: SI 10628169</div>
+              <div>TRR: SI56 0223 6026 1489 640 (NLB)</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
