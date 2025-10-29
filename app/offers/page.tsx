@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card"
 import { FileText, ArrowLeft, Copy } from "lucide-react"
 import { fetchCustomers, fetchOffers, saveOffer, updateOffer, type Customer, type Offer, type SavedOffer } from "@/lib/database"
 import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
-import { openEmailClient } from "@/lib/email-service"
+import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 import { Suspense } from "react"
 
 function OffersPageContent() {
