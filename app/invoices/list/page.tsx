@@ -31,7 +31,7 @@ import { InvoicePreview } from "@/components/invoice-preview"
 const generatePDFFilename = (invoice: SavedInvoice): string => {
   const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
   const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
-  return `${customerName}-${invoiceNum}.pdf`
+  return `${invoiceNum} ${customerName}.pdf`
 }
 
 export default function InvoicesListPage() {
