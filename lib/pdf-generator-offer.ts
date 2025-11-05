@@ -191,9 +191,9 @@ async function compressPNG(dataUrl: string, quality: number): Promise<string> {
 // Funkcija za prenos PDF-ja
 export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
   // Default ime PDF: "Ime stranke + št. ponudbe"
-  const customerName = offer.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
-  const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, "-")
-  const filename = `${customerName}-ponudba-${offerNum}.pdf`
+  const customerName = offer.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+  const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, " ")
+  const filename = `${offerNum} ${customerName}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
