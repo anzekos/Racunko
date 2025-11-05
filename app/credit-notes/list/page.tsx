@@ -124,8 +124,11 @@ export default function CreditNotesListPage() {
               const pdfBlob = await generateCreditNotePDFFromElement(element, creditNote)
               const url = URL.createObjectURL(pdfBlob)
               const a = document.createElement("a")
+              const customerName = creditNote.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+              const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
+              const filename = `${creditNoteNum} ${customerName}.pdf`
               a.href = url
-              a.download = `dobropis-${creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+              a.download = filename
               document.body.appendChild(a)
               a.click()
               document.body.removeChild(a)
@@ -167,8 +170,11 @@ export default function CreditNotesListPage() {
         const pdfBlob = await generateCreditNotePDFFromElement(element, creditNote)
         const url = URL.createObjectURL(pdfBlob)
         const a = document.createElement("a")
+        const customerName = creditNote.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+        const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
+        const filename = `${creditNoteNum} ${customerName}.pdf`
         a.href = url
-        a.download = `dobropis-${creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`
+        a.download = filename
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
