@@ -192,9 +192,9 @@ async function compressPNG(dataUrl: string, quality: number): Promise<string> {
 
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
   // Default ime PDF: "Ime stranke + št. računa"
-  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-")
-  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, "-")
-  const filename = `${customerName}-${invoiceNum}.pdf`
+  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, " ")
+  const filename = `${invoiceNum} ${customerName}.pdf`
 
   const element = document.getElementById(previewElementId)
   if (!element) {
