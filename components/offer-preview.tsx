@@ -196,7 +196,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
 
           {offer.serviceDescription && (
             <div className="mb-6">
-              <h4 className="offer-section-title mb-2">Opis storitv:</h4>
+              <h4 className="offer-section-title mb-2">Opis storitve:</h4>
               <div className="whitespace-pre-wrap">{offer.serviceDescription}</div>
             </div>
           )}
