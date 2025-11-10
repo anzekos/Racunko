@@ -125,14 +125,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
+// app/api/offers/[id]/route.ts - DELETE funkcija
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    // Najprej izbrišemo vse povezane postavke
+    await query('DELETE FROM OfferItems WHERE offer_id = ?', [params.id])
+    
+    // Nato izbrišemo ponudbo
     await query('DELETE FROM Offers WHERE id = ?', [params.id])
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Napaka pri brisanju ponudbe:', error)
     return NextResponse.json(
-      { error: 'Napaka pri brisanju ponudbe' },
+      { error: 'Napaka pri brisanju ponudbe: ' + (error as Error).message },
       { status: 500 }
     )
   }
