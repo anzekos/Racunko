@@ -1,7 +1,6 @@
 // lib/db-connection.ts
-import mysql from 'mysql2/promise';
+import mysql from 'mysql2/promise'
 
-// Connection pool za boljšo performance
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -10,32 +9,37 @@ const pool = mysql.createPool({
   port: Number(process.env.DB_PORT) || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
-});
+  queueLimit: 0,
+  connectTimeout: 10000, // ✅ 10 sekund timeout za vzpostavitev povezave
+  acquireTimeout: 10000, // ✅ 10 sekund za pridobitev povezave iz poola
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+})
 
-// Osnovna connection funkcija
 export async function getConnection() {
-  try {
-    const connection = await pool.getConnection();
-    return connection;
-  } catch (error) {
-    console.error('Database connection error:', error);
-    throw error;
-  }
+  return await pool.getConnection()
 }
 
-// Query funkcija za lažjo uporabo
 export async function query(sql: string, params?: any[]) {
-  const connection = await getConnection();
+  let connection
   try {
-    const [results] = await connection.execute(sql, params);
-    return results;
+    connection = await pool.getConnection()
+    const [results] = await connection.execute(sql, params)
+    return results
   } catch (error) {
-    console.error('Query error:', error);
-    throw error;
+    console.error('Database query error:', error)
+    throw error
   } finally {
-    connection.release();
+    if (connection) connection.release()
   }
 }
 
-export default pool;
+// Testiraj povezavo ob zagonu
+pool.getConnection()
+  .then(conn => {
+    console.log('✅ Database pool connected successfully')
+    conn.release()
+  })
+  .catch(err => {
+    console.error('❌ Database pool connection failed:', err)
+  })
