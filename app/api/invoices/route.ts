@@ -2,58 +2,83 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db-connection'
 
-// GET - pridobi vse račune
+// GET - pridobi vse račune (OPTIMIZIRANO!)
 export async function GET() {
   try {
-    const invoices = await query(`
+    // ✅ EN SAM QUERY z JOIN namesto N+1
+    const result = await query(`
       SELECT 
-        i.*,
-        s.Stranka, s.Naslov, s.Kraj_postna_st, s.email, s.ID_DDV
+        i.id,
+        i.invoice_number,
+        i.customer_id,
+        i.service_description,
+        i.issue_date,
+        i.due_date,
+        i.service_date,
+        i.total_without_vat,
+        i.vat,
+        i.total_payable,
+        i.status,
+        i.created_at,
+        i.updated_at,
+        s.Stranka,
+        s.Naslov,
+        s.Kraj_postna_st,
+        s.email,
+        s.ID_DDV,
+        ii.id as item_id,
+        ii.description as item_description,
+        ii.quantity as item_quantity,
+        ii.price as item_price,
+        ii.total as item_total
       FROM Invoices i
       LEFT JOIN Stranka s ON i.customer_id = s.id
-      ORDER BY i.created_at DESC
+      LEFT JOIN InvoiceItems ii ON i.id = ii.invoice_id
+      ORDER BY i.created_at DESC, ii.id ASC
     `)
 
-    // Pridobi postavke za vsak račun
-    const invoicesWithItems = await Promise.all(
-      invoices.map(async (invoice: any) => {
-        const items = await query(
-          'SELECT * FROM InvoiceItems WHERE invoice_id = ?',
-          [invoice.id]
-        )
-        
-        return {
-          id: invoice.id.toString(),
-          invoiceNumber: invoice.invoice_number,
+    // Preoblikuj rezultate v pravilno strukturo
+    const invoicesMap = new Map()
+    
+    result.forEach((row: any) => {
+      if (!invoicesMap.has(row.id)) {
+        invoicesMap.set(row.id, {
+          id: row.id.toString(),
+          invoiceNumber: row.invoice_number,
           customer: {
-            id: invoice.customer_id,
-            Stranka: invoice.Stranka,
-            Naslov: invoice.Naslov,
-            Kraj_postna_st: invoice.Kraj_postna_st,
-            email: invoice.email,
-            ID_DDV: invoice.ID_DDV,
+            id: row.customer_id,
+            Stranka: row.Stranka,
+            Naslov: row.Naslov,
+            Kraj_postna_st: row.Kraj_postna_st,
+            email: row.email,
+            ID_DDV: row.ID_DDV,
           },
-          items: items.map((item: any) => ({
-            description: item.description,
-            quantity: parseFloat(item.quantity),
-            price: parseFloat(item.price),
-            total: parseFloat(item.total),
-          })),
-          serviceDescription: invoice.service_description,
-          issueDate: invoice.issue_date,
-          dueDate: invoice.due_date,
-          serviceDate: invoice.service_date,
-          totalWithoutVat: parseFloat(invoice.total_without_vat),
-          vat: parseFloat(invoice.vat),
-          totalPayable: parseFloat(invoice.total_payable),
-          status: invoice.status,
-          createdAt: invoice.created_at,
-          updatedAt: invoice.updated_at,
-        }
-      })
-    )
+          items: [],
+          serviceDescription: row.service_description,
+          issueDate: row.issue_date,
+          dueDate: row.due_date,
+          serviceDate: row.service_date,
+          totalWithoutVat: parseFloat(row.total_without_vat),
+          vat: parseFloat(row.vat),
+          totalPayable: parseFloat(row.total_payable),
+          status: row.status,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        })
+      }
+      
+      // Dodaj item če obstaja
+      if (row.item_id) {
+        invoicesMap.get(row.id).items.push({
+          description: row.item_description,
+          quantity: parseFloat(row.item_quantity),
+          price: parseFloat(row.item_price),
+          total: parseFloat(row.item_total),
+        })
+      }
+    })
 
-    return NextResponse.json(invoicesWithItems)
+    return NextResponse.json(Array.from(invoicesMap.values()))
   } catch (error) {
     console.error('Napaka pri pridobivanju računov:', error)
     return NextResponse.json(
@@ -63,12 +88,11 @@ export async function GET() {
   }
 }
 
-// POST - ustvari nov račun
+// POST ostane enak - ne spreminjaj!
 export async function POST(request: NextRequest) {
   try {
     const invoice = await request.json()
 
-    // Preveri ali račun s to številko že obstaja
     const existing = await query(
       'SELECT id FROM Invoices WHERE invoice_number = ?',
       [invoice.invoiceNumber]
@@ -81,7 +105,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vstavi račun
     const result = await query(
       `INSERT INTO Invoices (
         invoice_number, customer_id, service_description,
@@ -103,7 +126,6 @@ export async function POST(request: NextRequest) {
 
     const invoiceId = result.insertId
 
-    // Vstavi postavke
     for (const item of invoice.items) {
       await query(
         `INSERT INTO InvoiceItems (
