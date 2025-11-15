@@ -191,7 +191,7 @@ async function compressPNG(dataUrl: string, quality: number): Promise<string> {
 // Funkcija za prenos PDF-ja
 export function downloadCreditNotePDFFromPreview(creditNote: SavedCreditNote, previewElementId: string = 'credit-note-preview-content') {
   // Default ime PDF: "Ime stranke + št. dobropisa"
-  const customerName = creditNote.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+  const customerName = creditNote.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
   const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
   const filename = `${creditNoteNum} ${customerName}.pdf`
 
