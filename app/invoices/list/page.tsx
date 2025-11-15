@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation"
 import { InvoicePreview } from "@/components/invoice-preview"
 
 const generatePDFFilename = (invoice: SavedInvoice): string => {
-  const customerName = invoice.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+  const customerName = invoice.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
   const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, " ")
   return `${invoiceNum} ${customerName}.pdf`
 }
