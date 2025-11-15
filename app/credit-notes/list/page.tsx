@@ -124,7 +124,7 @@ export default function CreditNotesListPage() {
               const pdfBlob = await generateCreditNotePDFFromElement(element, creditNote)
               const url = URL.createObjectURL(pdfBlob)
               const a = document.createElement("a")
-              const customerName = creditNote.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+              const customerName = creditNote.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
               const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
               const filename = `${creditNoteNum} ${customerName}.pdf`
               a.href = url
