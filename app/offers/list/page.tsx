@@ -125,7 +125,7 @@ export default function OffersListPage() {
               const url = URL.createObjectURL(pdfBlob)
               const a = document.createElement("a")
               a.href = url
-              const customerName = offer.customer.Stranka.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, " ")
+              const customerName = offer.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
               const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, " ")
               const filename = `${offerNum} ${customerName}.pdf`
               a.download = filename
