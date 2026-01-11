@@ -10,10 +10,10 @@ import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/
 import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 
 const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('sl-SI', {
+  return value.toLocaleString('de-DE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value)
+  })
 }
 
 interface OfferPreviewProps {
