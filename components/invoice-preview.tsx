@@ -10,10 +10,10 @@ import { openEmailClient } from "@/lib/email-service"
 
 // Pomožna funkcija za formatiranje številk po evropskem standardu
 const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('sl-SI', {
+  return value.toLocaleString('de-DE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value)
+  })
 }
 
 interface InvoicePreviewProps {
