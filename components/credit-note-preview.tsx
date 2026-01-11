@@ -10,10 +10,10 @@ import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } fr
 import { openEmailClient, sendCreditNoteEmail } from "@/lib/email-service-credit-note"
 
 const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('sl-SI', {
+  return value.toLocaleString('de-DE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value)
+  })
 }
 
 interface CreditNotePreviewProps {
