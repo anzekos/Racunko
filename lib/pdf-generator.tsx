@@ -52,75 +52,83 @@ function addFooterToPDF(pdf: jsPDF) {
 
 export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
   try {
-    // 1. Skrijemo gumbe
+    // 1. Priprava gumbov
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => (btn as HTMLElement).style.display = 'none')
 
-    // 2. Ustvarimo globok klon elementa
+    // 2. Ustvarimo klon
     const clonedElement = element.cloneNode(true) as HTMLElement
-    
-    // Odstranimo footerje
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
     footerElements.forEach(footer => footer.remove())
 
-    // 3. NUJNO: Očistimo vse oklch barve iz inline stilov in izračunanih stilov
-    // Preden element dodamo v tempDiv, mu ročno vsilimo HEX barve
-    const fixColors = (el: HTMLElement) => {
-      const style = window.getComputedStyle(el);
+    // 3. AGRESIVNO ČIŠČENJE BARV
+    // Ta funkcija bo na vsakem elementu posebej preverila barvo in jo 
+    // "povozila" z HEX vrednostjo, da html2canvas ne bo gledal CSS datotek.
+    const forceCleanColors = (el: HTMLElement) => {
+      const computed = window.getComputedStyle(el);
       
-      // Preverimo tekst, ozadje in obrobe
-      if (style.color.includes('oklch')) el.style.color = convertOklchToHex(style.color);
-      if (style.backgroundColor.includes('oklch')) el.style.backgroundColor = convertOklchToHex(style.backgroundColor);
-      if (style.borderColor.includes('oklch')) el.style.borderColor = convertOklchToHex(style.borderColor);
+      const properties = ['color', 'background-color', 'border-color', 'fill', 'stroke'];
       
-      // Iteriramo skozi otroke
-      Array.from(el.children).forEach(child => fixColors(child as HTMLElement));
+      properties.forEach(prop => {
+        const val = computed.getPropertyValue(prop);
+        if (val.includes('oklch')) {
+          // Namesto getPropertyValue uporabimo convertOklchToHex
+          const hex = convertOklchToHex(val);
+          el.style.setProperty(prop, hex, 'important');
+        }
+      });
+
+      // Gremo čez vse otroke
+      Array.from(el.children).forEach(child => forceCleanColors(child as HTMLElement));
     };
 
-    // 4. Priprava začasnega kontejnerja
+    // 4. Kontejner
     const tempDiv = document.createElement('div')
     const containerWidthPx = 800; 
-    
     Object.assign(tempDiv.style, {
         position: 'fixed',
         top: '-10000px',
         left: '0',
         width: `${containerWidthPx}px`,
         backgroundColor: '#ffffff',
-        fontFamily: 'Arial, sans-serif',
-        color: '#000000'
+        fontFamily: 'Arial, sans-serif'
     })
     
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
-    // IZVRŠIMO POPRAVEK BARV na vseh elementih v tempDiv
-    fixColors(tempDiv);
+    // Najprej počakamo trenutek, da brskalnik izračuna stile, nato jih fiksiramo
+    forceCleanColors(tempDiv);
 
-    // 5. GENERIRANJE VEKTORSKEGA PDF-ja
-    const pdf = new jsPDF('p', 'pt', 'a4');
+    // 5. PDF GENERIRANJE
+    const pdf = new jsPDF('p', 'pt', 'a4', true); // true za kompresijo
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const margin = 30;
     const availableWidth = pdfWidth - (2 * margin);
     const scale = availableWidth / containerWidthPx;
 
-    await new Promise<void>((resolve, reject) => {
-        pdf.html(tempDiv, {
-            callback: () => resolve(),
-            x: margin,
-            y: margin,
-            html2canvas: {
-                scale: scale,
-                logging: false,
-                useCORS: true,
-                // Ta zastavica včasih pomaga pri preskakovanju napak stilov
-                ignoreElements: (el) => el.classList.contains('print:hidden')
-            },
-            width: availableWidth,
-            windowWidth: containerWidthPx,
-            autoPaging: 'text',
-            margin: [margin, margin, margin, margin]
-        }).catch(err => reject(err));
+    await pdf.html(tempDiv, {
+      x: margin,
+      y: margin,
+      html2canvas: {
+        scale: scale,
+        useCORS: true,
+        logging: false,
+        // Dodaten varnostni mehanizem: ignoriraj problematične elemente
+        onclone: (doc) => {
+          // Še zadnji poskus čiščenja znotraj html2canvas klona
+          const all = doc.querySelectorAll('*');
+          all.forEach(el => {
+            const style = (el as HTMLElement).style;
+            if (style.color?.includes('oklch')) style.color = '#000000';
+            if (style.backgroundColor?.includes('oklch')) style.backgroundColor = 'transparent';
+          });
+        }
+      },
+      width: availableWidth,
+      windowWidth: containerWidthPx,
+      autoPaging: 'text',
+      margin: [margin, margin, margin, margin]
     });
 
     addFooterToPDF(pdf);
@@ -131,8 +139,8 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
     return new Blob([pdf.output('blob')], { type: 'application/pdf' });
 
   } catch (error) {
-    console.error("PDF Error:", error);
-    // Vrnemo gumbe v vidno stanje
+    console.error("Vektorski PDF Error:", error);
+    // Če še vedno javlja napako, ponastavimo gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => (btn as HTMLElement).style.display = '')
     throw error;
