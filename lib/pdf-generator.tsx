@@ -74,26 +74,27 @@ async function renderDocumentPDF(
 
   // ── LOGO top-right ─────────────────────────────────────────────────────
   if (logoData) {
-    const lw = 38, lh = 16
+    const lw = 40, lh = 17
     pdf.addImage(logoData, 'PNG', PW - MR - lw, y, lw, lh)
   }
-  y += 20
+  y += 22
 
   // ── red divider line ───────────────────────────────────────────────────
   setColor(pdf, BRAND, 'draw')
   pdf.setLineWidth(0.4)
-  pdf.line(ML + 8, y, PW - MR - 8, y)
+  pdf.line(ML, y, PW - MR, y)
   y += 6
 
   // ── two-column header (customer left, company right) ───────────────────
-  const colR = ML + CW / 2 + 4  // start of right column
+  // Start both columns at same y position
+  const headerStartY = y
 
   // LEFT – customer info
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(10)
   pdf.setTextColor(0, 0, 0)
   pdf.text(invoice.customer.Stranka || '', ML, y)
-  y += 5
+  y += 5.5
 
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(8.5)
@@ -105,38 +106,43 @@ async function renderDocumentPDF(
   custLines.forEach(line => { pdf.text(line, ML, y); y += 4.2 })
 
   pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(8.5)
   pdf.text('ID za DDV: ', ML, y)
   const idW = pdf.getTextWidth('ID za DDV: ')
   pdf.setFont('helvetica', 'normal')
   pdf.text(invoice.customer.ID_DDV || '', ML + idW, y)
 
-  // RIGHT – our company info (tiny, right-aligned)
+  // RIGHT – our company info (tiny, right-aligned), starts at same headerStartY
   const compLines = [
-    '2KM Consulting d.o.o., podjetniško in poslovno svetovanje',
-    'Športna ulica 22, 1000 Ljubljana',
-    'MŠ: 6315992000',
-    'ID. št. za DDV: SI 10628169',
-    'Osnovni kapital: 7.500,00 EUR',
-    'Datum vpisa v SR: 13.2.2013, Okrožno sodišče Koper',
-    '',
-    'Poslovni račun št:',
-    'IBAN: SI56 0223 6026 1489 640',
-    'Nova Ljubljanska banka d.d., Ljubljana',
-    'Trg republike 2, 1520 Ljubljana',
-    'SWIFT: LJBASI2X',
+    { text: '2KM Consulting d.o.o., podjetniško in poslovno svetovanje', bold: true },
+    { text: 'Športna ulica 22, 1000 Ljubljana', bold: false },
+    { text: 'MŠ: 6315992000', bold: false },
+    { text: 'ID. št. za DDV: SI 10628169', bold: false },
+    { text: 'Osnovni kapital: 7.500,00 EUR', bold: false },
+    { text: 'Datum vpisa v SR: 13.2.2013, Okrožno sodišče Koper', bold: false },
+    { text: '', bold: false },
+    { text: 'Poslovni račun št:', bold: false },
+    { text: 'IBAN: SI56 0223 6026 1489 640', bold: false },
+    { text: 'Nova Ljubljanska banka d.d., Ljubljana', bold: false },
+    { text: 'Trg republike 2, 1520 Ljubljana', bold: false },
+    { text: 'SWIFT: LJBASI2X', bold: false },
   ]
-  pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(7)
-  let yr = MT + 20
-  compLines.forEach(line => {
-    if (line) pdf.text(line, PW - MR, yr, { align: 'right' })
+  let yr = headerStartY
+  compLines.forEach(({ text, bold }) => {
+    if (text) {
+      pdf.setFont('helvetica', bold ? 'bold' : 'normal')
+      pdf.text(text, PW - MR, yr, { align: 'right' })
+    }
     yr += 3.6
   })
 
-  y += 10
+  // dates block starts after customer info (left column continues)
+  y += 8
 
-  // ── dates block (left) ─────────────────────────────────────────────────
+  // ── dates block (left) + IBAN block continues right ────────────────────
   pdf.setFontSize(8.5)
+  pdf.setTextColor(0, 0, 0)
   const dateRows: [string, string][] = [
     ['Ljubljana:', fmtDate(invoice.issueDate)],
     [opts.isOffer ? 'Veljavnost:' : 'Valuta:', fmtDate(invoice.dueDate)],
@@ -146,22 +152,28 @@ async function renderDocumentPDF(
   }
   dateRows.forEach(([label, val]) => {
     pdf.setFont('helvetica', 'bold'); pdf.text(label, ML, y)
-    pdf.setFont('helvetica', 'normal'); pdf.text(val, ML + pdf.getTextWidth(label) + 2, y)
+    pdf.setFont('helvetica', 'normal'); pdf.text(val, ML + pdf.getTextWidth(label) + 1.5, y)
     y += 5
   })
-  y += 4
+  y += 6
 
-  // ── document number ────────────────────────────────────────────────────
+  // ── document number – in a light box with letter-spacing style ──────────
+  const boxH = 9
+  setColor(pdf, '#eeeeee', 'fill')
+  pdf.rect(ML, y - 6.5, CW, boxH, 'F')
   pdf.setFontSize(12)
   pdf.setFont('helvetica', 'bold')
-  pdf.text(`${opts.documentLabel}:  ${opts.documentNumber}`, ML, y)
-  y += 6
+  pdf.setTextColor(0, 0, 0)
+  // Build spaced label like "R a č u n :"
+  const spacedLabel = opts.documentLabel.split('').join(' ')
+  pdf.text(`${spacedLabel}:  ${opts.documentNumber}`, ML + 3, y)
+  y += 5
 
   // ── thin divider ───────────────────────────────────────────────────────
   pdf.setDrawColor(180, 180, 180)
   pdf.setLineWidth(0.25)
   pdf.line(ML, y, PW - MR, y)
-  y += 5
+  y += 6
 
   // ── service description ────────────────────────────────────────────────
   if (invoice.serviceDescription && invoice.serviceDescription.trim()) {
@@ -170,11 +182,11 @@ async function renderDocumentPDF(
     pdf.setTextColor(0,0,0)
     const label = opts.isCreditNote ? 'Razlog za dobropis:' : 'Opis storitve:'
     pdf.text(label, ML, y)
-    y += 4.5
+    y += 5
     pdf.setFont('helvetica', 'normal')
     const descLines = pdf.splitTextToSize(invoice.serviceDescription, CW)
-    descLines.forEach((line: string) => { pdf.text(line, ML, y); y += 4 })
-    y += 3
+    descLines.forEach((line: string) => { pdf.text(line, ML, y); y += 4.5 })
+    y += 4
   }
 
   // ── ITEMS TABLE ────────────────────────────────────────────────────────
@@ -269,28 +281,30 @@ async function renderDocumentPDF(
     pdf.setFont('helvetica', 'normal')
     pdf.text('Vračilo zneska bo izvedeno v roku 14 dni.', ML, y); y += 5
   } else if (!opts.isOffer) {
+    pdf.setFont('helvetica', 'bold')
     pdf.text('V primeru zamude se zaračunavajo zamudne obresti.', ML, y); y += 5
   }
 
   y += 2
   pdf.setFont('helvetica', 'bold')
   pdf.text('Hvala za sodelovanje!', ML, y)
-  y += 10
+  y += 8
 
-  // ── signature ──────────────────────────────────────────────────────────
-  if (signData) {
-    const sw = 36, sh = 18
-    pdf.addImage(signData, 'PNG', PW - MR - sw, y - 4, sw, sh)
-  }
+  // ── signature: label first, then logo below ────────────────────────────
   pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(8)
-  pdf.text('2KM Consulting d.o.o.', PW - MR, y + 15, { align: 'right' })
+  pdf.setFontSize(9)
+  pdf.text('2KM Consulting d.o.o.', PW - MR, y, { align: 'right' })
+  y += 3
+  if (signData) {
+    const sw = 38, sh = 19
+    pdf.addImage(signData, 'PNG', PW - MR - sw, y, sw, sh)
+  }
 
   // ── FOOTER ─────────────────────────────────────────────────────────────
   const fy = PH - 10
   setColor(pdf, BRAND, 'draw')
   pdf.setLineWidth(0.4)
-  pdf.line(ML + 8, fy - 18, PW - MR - 8, fy - 18)
+  pdf.line(ML, fy - 18, PW - MR, fy - 18)
 
   pdf.setFontSize(7)
   setColor(pdf, BRAND)
