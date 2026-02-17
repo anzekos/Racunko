@@ -52,22 +52,33 @@ function addFooterToPDF(pdf: jsPDF) {
 
 export async function generateInvoicePDFFromElement(element: HTMLElement, invoice: SavedInvoice): Promise<Blob> {
   try {
-    // 1. Priprava elementov
+    // 1. Skrijemo gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => (btn as HTMLElement).style.display = 'none')
 
+    // 2. Ustvarimo globok klon elementa
     const clonedElement = element.cloneNode(true) as HTMLElement
     
-    // Odstranimo obstoječe footerje
+    // Odstranimo footerje
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
     footerElements.forEach(footer => footer.remove())
-    
-    // 2. Priprava kontejnerja
-    // Za vektorski PDF je ključno, da je širina kontejnerja fiksna v pikslih,
-    // ki ustrezajo razmerju A4, da se tekst pravilno prelomi.
+
+    // 3. NUJNO: Očistimo vse oklch barve iz inline stilov in izračunanih stilov
+    // Preden element dodamo v tempDiv, mu ročno vsilimo HEX barve
+    const fixColors = (el: HTMLElement) => {
+      const style = window.getComputedStyle(el);
+      
+      // Preverimo tekst, ozadje in obrobe
+      if (style.color.includes('oklch')) el.style.color = convertOklchToHex(style.color);
+      if (style.backgroundColor.includes('oklch')) el.style.backgroundColor = convertOklchToHex(style.backgroundColor);
+      if (style.borderColor.includes('oklch')) el.style.borderColor = convertOklchToHex(style.borderColor);
+      
+      // Iteriramo skozi otroke
+      Array.from(el.children).forEach(child => fixColors(child as HTMLElement));
+    };
+
+    // 4. Priprava začasnega kontejnerja
     const tempDiv = document.createElement('div')
-    // A4 širina v točkah (pt) je cca 595pt. Za boljšo kvaliteto HTML renderiranja
-    // uporabimo večjo širino (npr. 800px) in jo potem skaliramo.
     const containerWidthPx = 800; 
     
     Object.assign(tempDiv.style, {
@@ -76,72 +87,55 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
         left: '0',
         width: `${containerWidthPx}px`,
         backgroundColor: '#ffffff',
-        fontFamily: 'Arial, sans-serif', // Arial je varen font
-        fontSize: '12px',
+        fontFamily: 'Arial, sans-serif',
         color: '#000000'
     })
     
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
-    // Normalizacija barv (pretvori oklch v hex, ker PDF ne podpira modernih CSS barv)
-    const allElements = tempDiv.querySelectorAll('*')
-    allElements.forEach(el => {
-      const htmlEl = el as HTMLElement;
-      // Normalizacija barv
-      const style = window.getComputedStyle(htmlEl);
-      if (style.color.includes('oklch')) htmlEl.style.color = convertOklchToHex(style.color);
-      if (style.backgroundColor.includes('oklch')) htmlEl.style.backgroundColor = convertOklchToHex(style.backgroundColor);
-      if (style.borderColor.includes('oklch')) htmlEl.style.borderColor = convertOklchToHex(style.borderColor);
-    })
+    // IZVRŠIMO POPRAVEK BARV na vseh elementih v tempDiv
+    fixColors(tempDiv);
 
-    // 3. GENERIRANJE VEKTORSKEGA PDF-ja
-    // Uporabimo 'pt' (points) enote, ker so standard za PDF
+    // 5. GENERIRANJE VEKTORSKEGA PDF-ja
     const pdf = new jsPDF('p', 'pt', 'a4');
-    
-    const pdfWidth = pdf.internal.pageSize.getWidth(); // 595.28 pt
-    const margin = 30; // cca 10mm
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const margin = 30;
     const availableWidth = pdfWidth - (2 * margin);
-    
-    // Izračunamo razmerje pomanjšave (HTML px -> PDF pt)
     const scale = availableWidth / containerWidthPx;
 
-    // Počakamo na render
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
         pdf.html(tempDiv, {
-            callback: function (doc) {
-                // Ta callback se zgodi, ko je PDF zgeneriran
-                resolve();
-            },
+            callback: () => resolve(),
             x: margin,
             y: margin,
             html2canvas: {
-                scale: scale, // Zmanjšamo HTML, da paše na stran
+                scale: scale,
                 logging: false,
-                useCORS: true, // Pomembno za slike
-                letterRendering: true, // Poskusi izboljšati renderiranje črk
+                useCORS: true,
+                // Ta zastavica včasih pomaga pri preskakovanju napak stilov
+                ignoreElements: (el) => el.classList.contains('print:hidden')
             },
-            width: availableWidth, // Povemo jsPDF, kako širok naj bo content
-            windowWidth: containerWidthPx, // Povemo, kako širok je vir
-            autoPaging: 'text', // Pametno lomljenje strani (ne sredi vrstice)
-            margin: [margin, margin, margin, margin] // Robovi [top, left, bottom, right]
-        });
+            width: availableWidth,
+            windowWidth: containerWidthPx,
+            autoPaging: 'text',
+            margin: [margin, margin, margin, margin]
+        }).catch(err => reject(err));
     });
 
-    // 4. Dodamo footer na vse strani (vektorsko)
-    // Ker je pdf.html() async, to naredimo po awaitu
     addFooterToPDF(pdf);
 
-    // Čiščenje
     document.body.removeChild(tempDiv);
     actionButtons.forEach(btn => (btn as HTMLElement).style.display = '');
 
     return new Blob([pdf.output('blob')], { type: 'application/pdf' });
 
   } catch (error) {
+    console.error("PDF Error:", error);
+    // Vrnemo gumbe v vidno stanje
     const actionButtons = element.querySelectorAll('.print\\:hidden')
     actionButtons.forEach(btn => (btn as HTMLElement).style.display = '')
-    throw error
+    throw error;
   }
 }
 
