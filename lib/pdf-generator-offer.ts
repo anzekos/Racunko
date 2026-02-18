@@ -1,173 +1,125 @@
 import type { SavedInvoice } from "./database"
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 
 // Type za Offer (ima offerNumber namesto invoiceNumber)
 type SavedOffer = SavedInvoice & { offerNumber: string }
 
-// Pomožna funkcija za pretvorbo oklch barv v hex/rgb
+// Pomožna funkcija za pretvorbo oklch barv v hex
 function convertOklchToHex(oklchValue: string): string {
   if (!oklchValue || !oklchValue.includes('oklch')) return oklchValue
+  // Mapiranje vaših specifičnih barv
   if (oklchValue.includes('0.7') && oklchValue.includes('0.05')) return '#934435'
   if (oklchValue.includes('0.95')) return '#f8ecec'
   if (oklchValue.includes('0.87')) return '#cccccc'
   return '#000000'
 }
 
-// Pomožna funkcija za normalizacijo CSS barv - vključuje !important za preglasitev Tailwind v4
-function normalizeColors(element: HTMLElement) {
-  const computedStyle = window.getComputedStyle(element)
-  
-  const properties = ['color', 'backgroundColor', 'borderColor'] as const;
-  
-  properties.forEach(prop => {
-    const val = computedStyle[prop];
-    if (val && val.includes('oklch')) {
-      const hex = convertOklchToHex(val);
-      element.style.setProperty(prop === 'backgroundColor' ? 'background-color' : 
-                                prop === 'borderColor' ? 'border-color' : prop, 
-                                hex, 'important');
-    }
-  });
+// Funkcija za dodajanje footera (Vektorsko)
+function addFooterToPDF(pdf: jsPDF) {
+  const pageCount = pdf.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    pdf.setPage(i);
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const footerY = pageHeight - margin;
+    
+    pdf.setDrawColor(147, 68, 53);
+    pdf.setLineWidth(0.4);
+    pdf.line(margin + 10, footerY - 18, pageWidth - margin - 10, footerY - 18);
+
+    pdf.setFontSize(7);
+    pdf.setTextColor(147, 68, 53);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin - 10, footerY - 14, { align: 'right' });
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - margin - 10, footerY - 10, { align: 'right' });
+    pdf.text('DŠ: SI 10628169', pageWidth - margin - 10, footerY - 6, { align: 'right' });
+    pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - 10, footerY - 2, { align: 'right' });
+  }
 }
 
-// Funkcija za dodajanje footera na dno PDF-ja (Vektorski tekst)
-function addFooterToPDF(pdf: jsPDF, offer: SavedOffer) {
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  
-  const margin = 10;
-  const footerY = pageHeight - margin;
-  const lineWidth = 0.4;
-  const lineShortening = 10;
-  
-  pdf.setDrawColor(147, 68, 53);
-  pdf.setLineWidth(lineWidth);
-  
-  const lineStartX = margin + lineShortening;
-  const lineEndX = pageWidth - margin - lineShortening;
-  
-  pdf.line(lineStartX, footerY - 18, lineEndX, footerY - 18);
-  
-  const textOffset = 10;
-
-  pdf.setFontSize(7);
-  pdf.setTextColor(147, 68, 53);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('2KM Consulting d.o.o., podjetniško in poslovno svetovanje', pageWidth - margin - textOffset, footerY - 14, { align: 'right' });
-  pdf.setFont('helvetica', 'normal');
-  pdf.text('Športna ulica 22, 1000 Ljubljana', pageWidth - margin - textOffset, footerY - 10, { align: 'right' });
-  pdf.text('DŠ: SI 10628169', pageWidth - margin - textOffset, footerY - 6, { align: 'right' });
-  pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
-}
-
-// NADGRAJENA FUNKCIJA: Optimizirana za ostrino in majhno velikost
 export async function generateOfferPDFFromElement(element: HTMLElement, offer: SavedOffer): Promise<Blob> {
   try {
-    // 1. Skrijemo akcijske gumbe
+    // 1. Skrijemo gumbe
     const actionButtons = element.querySelectorAll('.print\\:hidden')
-    actionButtons.forEach(btn => { (btn as HTMLElement).style.display = 'none' })
+    actionButtons.forEach(btn => (btn as HTMLElement).style.display = 'none')
 
-    // 2. Kloniranje in priprava
+    // 2. Kloniranje in čiščenje barv (da preprečimo oklch napako)
     const clonedElement = element.cloneNode(true) as HTMLElement
     const footerElements = clonedElement.querySelectorAll('.normal-footer')
-    footerElements.forEach(footer => footer.remove())
-    
+    footerElements.forEach(f => f.remove())
+
     const tempDiv = document.createElement('div')
+    const containerWidthPx = 800; // Standardna širina za stabilen HTML render
+    
     Object.assign(tempDiv.style, {
-        position: 'fixed',
-        top: '-10000px',
-        left: '0',
-        width: '210mm',
-        backgroundColor: '#ffffff',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '9pt',
-        color: '#000000',
-        webkitFontSmoothing: 'antialiased'
+      position: 'fixed',
+      top: '-10000px',
+      left: '0',
+      width: `${containerWidthPx}px`,
+      backgroundColor: '#ffffff',
+      fontFamily: 'Arial, sans-serif'
     })
     
     tempDiv.appendChild(clonedElement)
     document.body.appendChild(tempDiv)
 
-    // Počakamo na render
-    await new Promise(resolve => setTimeout(resolve, 400))
-
-    // Normaliziramo barve na vseh elementih
-    const allElements = tempDiv.querySelectorAll('*')
-    allElements.forEach(el => normalizeColors(el as HTMLElement))
-
-    // 3. RENDERIRANJE (Scale 3.0 za popolno ostrino)
-    const canvas = await html2canvas(tempDiv, {
-      scale: 3.0, 
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      width: tempDiv.scrollWidth,
-      height: tempDiv.scrollHeight,
-      onclone: (clonedDoc) => {
-        const clonedElements = clonedDoc.querySelectorAll('*')
-        clonedElements.forEach(el => normalizeColors(el as HTMLElement))
-      }
+    // Agresivna zamenjava oklch barv s HEX, preden jsPDF sploh pogleda element
+    const all = tempDiv.querySelectorAll('*')
+    all.forEach(el => {
+      const htmlEl = el as HTMLElement
+      const style = window.getComputedStyle(htmlEl)
+      if (style.color.includes('oklch')) htmlEl.style.setProperty('color', convertOklchToHex(style.color), 'important');
+      if (style.backgroundColor.includes('oklch')) htmlEl.style.setProperty('background-color', convertOklchToHex(style.backgroundColor), 'important');
+      if (style.borderColor.includes('oklch')) htmlEl.style.setProperty('border-color', convertOklchToHex(style.borderColor), 'important');
     })
 
-    // Počistimo DOM
-    document.body.removeChild(tempDiv)
-    actionButtons.forEach(btn => { (btn as HTMLElement).style.display = '' })
+    // 3. Vektorsko generiranje PDF
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    const margin = 30; // 30pt margin
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const availableWidth = pdfWidth - (2 * margin);
+    const scale = availableWidth / containerWidthPx;
 
-    // 4. USTVARJANJE PDF (PNG + FAST kompresija)
-    const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-        compress: true 
-    })
-    
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = pdf.internal.pageSize.getHeight()
-    const margin = 10
-    const topMargin = 10
-    const imgWidth = pdfWidth - (2 * margin)
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
-    const availableHeight = pdfHeight - topMargin - margin - 20
-    
-    let finalWidth = imgWidth
-    let finalHeight = imgHeight
-    let finalX = margin
+    await pdf.html(tempDiv, {
+      x: margin,
+      y: margin,
+      html2canvas: {
+        scale: scale,
+        useCORS: true,
+        logging: false
+      },
+      width: availableWidth,
+      windowWidth: containerWidthPx,
+      autoPaging: 'text',
+      margin: [margin, margin, margin, margin]
+    });
 
-    if (imgHeight > availableHeight) {
-       const scale = availableHeight / imgHeight
-       finalWidth = imgWidth * scale
-       finalHeight = imgHeight * scale
-       finalX = (pdfWidth - finalWidth) / 2
-    }
+    // 4. Dodajanje vektorskega footera
+    addFooterToPDF(pdf);
 
-    // PNG ohranja ostre robove teksta brez "megle", FAST pa zmanjša velikost
-    pdf.addImage(canvas, 'PNG', finalX, topMargin, finalWidth, finalHeight, undefined, 'FAST')
+    // Čiščenje
+    document.body.removeChild(tempDiv);
+    actionButtons.forEach(btn => (btn as HTMLElement).style.display = '');
 
-    // 5. Dodamo footer
-    addFooterToPDF(pdf, offer)
+    return new Blob([pdf.output('blob')], { type: 'application/pdf' });
 
-    return new Blob([pdf.output('blob')], { type: 'application/pdf' })
-    
   } catch (error) {
+    console.error("PDF Error:", error);
     const actionButtons = element.querySelectorAll('.print\\:hidden')
-    actionButtons.forEach(btn => { (btn as HTMLElement).style.display = '' })
-    throw error
+    actionButtons.forEach(btn => (btn as HTMLElement).style.display = '')
+    throw error;
   }
 }
 
-// Funkcija za prenos PDF-ja
 export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId: string = 'offer-preview-content') {
   const customerName = offer.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ").trim()
   const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9-]/g, " ").trim()
   const filename = `${offerNum} ${customerName}.pdf`
 
   const element = document.getElementById(previewElementId)
-  if (!element) {
-    console.error(`Element z ID "${previewElementId}" ni bil najden`)
-    return
-  }
+  if (!element) return;
 
   document.body.style.cursor = 'wait'
 
@@ -177,21 +129,13 @@ export function downloadOfferPDFFromPreview(offer: SavedOffer, previewElementId:
       const a = document.createElement("a")
       a.href = url
       a.download = filename
-      document.body.appendChild(a)
       a.click()
-      document.body.removeChild(a)
       URL.revokeObjectURL(url)
     })
-    .catch(error => {
-      console.error('Napaka pri generiranju PDF-ja:', error)
-      alert('Napaka: ' + error.message)
-    })
-    .finally(() => {
-        document.body.style.cursor = 'default'
-    })
+    .catch(err => alert("Napaka: " + err.message))
+    .finally(() => document.body.style.cursor = 'default')
 }
 
-// Alias funkcija za kompatibilnost
 export function downloadOfferPDF(offer: SavedOffer) {
   downloadOfferPDFFromPreview(offer, 'offer-preview-content')
 }
