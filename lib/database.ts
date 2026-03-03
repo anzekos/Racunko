@@ -453,3 +453,16 @@ export async function updateCreditNoteStatus(creditNoteId: string, status: strin
     throw error
   }
 }
+
+export async function updateInvoicePayment(
+  id: string,
+  paidAmount: number,
+  notes: string
+): Promise<void> {
+  const response = await fetch(`/api/invoices/${id}/payment`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paid_amount: paidAmount, notes }),
+  })
+  if (!response.ok) throw new Error('Napaka pri posodabljanju plačila')
+}
