@@ -2,16 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db-connection'
 
-interface RouteParams {
-  params: { id: string }
-}
-
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { paid_amount, notes } = await request.json()
 
     await query(
-      'UPDATE Invoices SET paid_amount = ?, notes = ?, updated_at = NOW() WHERE id = ?',
+      `UPDATE Invoices SET paid_amount = ?, notes = ?, updated_at = NOW() WHERE id = ?`,
       [paid_amount ?? 0, notes ?? '', params.id]
     )
 
