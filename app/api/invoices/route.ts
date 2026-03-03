@@ -18,6 +18,8 @@ export async function GET() {
         i.total_without_vat,
         i.vat,
         i.total_payable,
+        i.paid_amount,   // ← DODAJ
+        i.notes,         // ← DODAJ
         i.status,
         i.created_at,
         i.updated_at,
@@ -61,6 +63,9 @@ export async function GET() {
           totalWithoutVat: parseFloat(row.total_without_vat),
           vat: parseFloat(row.vat),
           totalPayable: parseFloat(row.total_payable),
+          paidAmount: parseFloat(row.paid_amount || 0),      // ← DODAJ
+          unpaidAmount: parseFloat(row.total_payable) - parseFloat(row.paid_amount || 0), // ← DODAJ
+          notes: row.notes || '',                             // ← DODAJ
           status: row.status,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
