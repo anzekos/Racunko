@@ -2,7 +2,7 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks, TrendingUp, Receipt } from "lucide-react"
+import { Users, FileText, Home, ChevronLeft, ChevronRight, ListChecks, TrendingUp, Receipt, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
@@ -56,6 +56,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       label: "Vsi dobropisi", 
       href: "/credit-notes/list", 
       active: pathname.includes("/credit-notes/list") 
+    },
+    { 
+      icon: BookOpen,  // ← dodaj BookOpen v import
+      label: "Baza računov", 
+      href: "/invoices/ledger", 
+      active: pathname.includes("/invoices/ledger") 
     },
   ]
 
