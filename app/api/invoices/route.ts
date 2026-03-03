@@ -18,8 +18,8 @@ export async function GET() {
         i.total_without_vat,
         i.vat,
         i.total_payable,
-        i.paid_amount,   // ← DODAJ
-        i.notes,         // ← DODAJ
+        i.paid_amount,   
+        i.notes,         
         i.status,
         i.created_at,
         i.updated_at,
