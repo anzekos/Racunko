@@ -95,6 +95,9 @@ export interface Invoice {
   totalWithoutVat: number
   vat: number
   totalPayable: number
+  paidAmount?: number
+  unpaidAmount?: number
+  notes?: string
 }
 
 export interface SavedInvoice extends Invoice {
