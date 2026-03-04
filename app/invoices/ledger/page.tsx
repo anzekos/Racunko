@@ -107,18 +107,37 @@ export default function InvoiceLedgerPage() {
   const [localEdits, setLocalEdits] = useState<Record<string, LocalEdit>>({})
 
   useEffect(() => {
-    fetchInvoices().then(data => {
-      setInvoices(data)
-      const init: Record<string, LocalEdit> = {}
-      data.forEach(inv => {
-        init[inv.id!] = {
-          paidAmount: inv.paidAmount ?? 0,
-          notes: inv.notes ?? "",
-        }
-      })
-      setLocalEdits(init)
-      setLoading(false)
-    })
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        setLoading(true)
+        const data = await fetchInvoices()
+        if (cancelled) return
+
+        setInvoices(data)
+        const init: Record<string, LocalEdit> = {}
+        data.forEach(inv => {
+          if (!inv.id) return
+          init[inv.id] = {
+            paidAmount: inv.paidAmount ?? 0,
+            notes: inv.notes ?? "",
+          }
+        })
+        setLocalEdits(init)
+      } catch (e) {
+        console.error("Error loading invoices:", e)
+        if (cancelled) return
+        setInvoices([])
+        setLocalEdits({})
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const prevMonth = () => {
