@@ -16,6 +16,22 @@ const MONTHS = [
 type LocalEdit = { paidAmount: number; notes: string }
 type ViewMode = "month" | "year"
 
+function parseAmount(val: string): number {
+  if (!val) return 0
+  let v = val.replace(/\s/g, "")
+  const hasComma = v.includes(",")
+  const hasDot = v.includes(".")
+
+  if (hasComma && hasDot) {
+    v = v.replace(/\./g, "").replace(",", ".")
+  } else if (hasComma) {
+    v = v.replace(",", ".")
+  }
+
+  const num = parseFloat(v)
+  return isNaN(num) ? 0 : num
+}
+
 function EditableCell({
   value,
   type = "text",
@@ -151,7 +167,7 @@ export default function InvoiceLedgerPage() {
   }
 
   const handlePaidChange = (id: string, val: string) => {
-    const num = parseFloat(val) || 0
+    const num = parseAmount(val)
     setLocalEdits(prev => ({ ...prev, [id]: { ...prev[id], paidAmount: num } }))
   }
 
@@ -263,7 +279,7 @@ export default function InvoiceLedgerPage() {
         <td style={{ ...TD_STYLE, textAlign: "right", background: "#f0fdf4" }}>
           <EditableCell
             value={edit.paidAmount === 0 ? "" : edit.paidAmount}
-            type="number"
+            type="text"
             onSave={val => handlePaidChange(inv.id!, val)}
           />
         </td>
