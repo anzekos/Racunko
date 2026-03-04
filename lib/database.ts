@@ -106,19 +106,6 @@ export interface SavedInvoice extends Invoice {
   updatedAt: string
 }
 
-export type PageMeta = {
-  page: number
-  pageSize: number
-  total: number
-  totalPages: number
-  hasMore: boolean
-}
-
-export type PagedResult<T> = {
-  data: T[]
-  meta: PageMeta
-}
-
 export interface Offer {
   id?: string
   offerNumber: string
@@ -234,38 +221,13 @@ export async function saveInvoice(invoice: Invoice): Promise<SavedInvoice> {
 }
 
 export async function fetchInvoices(): Promise<SavedInvoice[]> {
-  // Legacy: vrne vse račune (lahko je počasno na veliki bazi)
-  const response = await fetch('/api/invoices?all=true')
+  const response = await fetch('/api/invoices')
   
   if (!response.ok) {
     throw new Error('Napaka pri nalaganju računov')
   }
 
   return response.json()
-}
-
-export async function fetchInvoicesPage(opts?: {
-  page?: number
-  pageSize?: number
-  q?: string
-  status?: string
-}): Promise<PagedResult<SavedInvoice>> {
-  const params = new URLSearchParams()
-  params.set('page', String(opts?.page ?? 1))
-  params.set('pageSize', String(opts?.pageSize ?? 50))
-  if (opts?.q) params.set('q', opts.q)
-  if (opts?.status) params.set('status', opts.status)
-
-  const response = await fetch(`/api/invoices?${params.toString()}`)
-  if (!response.ok) {
-    throw new Error('Napaka pri nalaganju računov')
-  }
-  return response.json()
-}
-
-export async function fetchInvoicesCount(): Promise<number> {
-  const res = await fetchInvoicesPage({ page: 1, pageSize: 1 })
-  return res.meta.total ?? 0
 }
 
 export async function fetchInvoiceById(id: string): Promise<SavedInvoice> {
@@ -343,38 +305,13 @@ export async function saveOffer(offer: Offer): Promise<SavedOffer> {
 }
 
 export async function fetchOffers(): Promise<SavedOffer[]> {
-  // Legacy: vrne vse ponudbe (lahko je počasno na veliki bazi)
-  const response = await fetch('/api/offers?all=true')
+  const response = await fetch('/api/offers')
   
   if (!response.ok) {
     throw new Error('Napaka pri nalaganju ponudb')
   }
 
   return response.json()
-}
-
-export async function fetchOffersPage(opts?: {
-  page?: number
-  pageSize?: number
-  q?: string
-  status?: string
-}): Promise<PagedResult<SavedOffer>> {
-  const params = new URLSearchParams()
-  params.set('page', String(opts?.page ?? 1))
-  params.set('pageSize', String(opts?.pageSize ?? 50))
-  if (opts?.q) params.set('q', opts.q)
-  if (opts?.status) params.set('status', opts.status)
-
-  const response = await fetch(`/api/offers?${params.toString()}`)
-  if (!response.ok) {
-    throw new Error('Napaka pri nalaganju ponudb')
-  }
-  return response.json()
-}
-
-export async function fetchOffersCount(): Promise<number> {
-  const res = await fetchOffersPage({ page: 1, pageSize: 1 })
-  return res.meta.total ?? 0
 }
 
 export async function fetchOfferById(id: string): Promise<SavedOffer> {
@@ -452,38 +389,13 @@ export async function saveCreditNote(creditNote: CreditNote): Promise<SavedCredi
 }
 
 export async function fetchCreditNotes(): Promise<SavedCreditNote[]> {
-  // Legacy: vrne vse dobropise (lahko je počasno na veliki bazi)
-  const response = await fetch('/api/credit-notes?all=true')
+  const response = await fetch('/api/credit-notes')
   
   if (!response.ok) {
     throw new Error('Napaka pri nalaganju dobropisov')
   }
 
   return response.json()
-}
-
-export async function fetchCreditNotesPage(opts?: {
-  page?: number
-  pageSize?: number
-  q?: string
-  status?: string
-}): Promise<PagedResult<SavedCreditNote>> {
-  const params = new URLSearchParams()
-  params.set('page', String(opts?.page ?? 1))
-  params.set('pageSize', String(opts?.pageSize ?? 50))
-  if (opts?.q) params.set('q', opts.q)
-  if (opts?.status) params.set('status', opts.status)
-
-  const response = await fetch(`/api/credit-notes?${params.toString()}`)
-  if (!response.ok) {
-    throw new Error('Napaka pri nalaganju dobropisov')
-  }
-  return response.json()
-}
-
-export async function fetchCreditNotesCount(): Promise<number> {
-  const res = await fetchCreditNotesPage({ page: 1, pageSize: 1 })
-  return res.meta.total ?? 0
 }
 
 export async function fetchCreditNoteById(id: string): Promise<SavedCreditNote> {
