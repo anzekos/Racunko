@@ -11,7 +11,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FileText, ArrowLeft, Copy } from "lucide-react"
-import { fetchCustomers, fetchInvoices, saveInvoice, updateInvoice, type Customer, type Invoice, type SavedInvoice } from "@/lib/database"
+import { fetchCustomers, fetchInvoiceById, fetchInvoicesCount, saveInvoice, updateInvoice, type Customer, type Invoice, type SavedInvoice } from "@/lib/database"
 import { downloadInvoicePDF } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import { Suspense } from "react"
@@ -42,12 +42,12 @@ function InvoicesPageContent() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [customersData, invoicesData] = await Promise.all([
+      const [customersData, invoicesTotal] = await Promise.all([
         fetchCustomers(),
-        fetchInvoices()
+        fetchInvoicesCount()
       ])
       setCustomers(customersData)
-      setInvoiceCount(invoicesData.length)
+      setInvoiceCount(invoicesTotal)
     } catch (error) {
       console.error("Error loading data:", error)
     } finally {
@@ -57,12 +57,9 @@ function InvoicesPageContent() {
 
   const loadInvoiceForEdit = async (id: string) => {
     try {
-      const invoices = await fetchInvoices()
-      const found = invoices.find(inv => inv.id === id)
-      if (found) {
-        setEditingInvoice(found)
-        setSaveAsMode(false) // Reset Save As načina ob nalaganju računa
-      }
+      const found = await fetchInvoiceById(id)
+      setEditingInvoice(found)
+      setSaveAsMode(false) // Reset Save As načina ob nalaganju računa
     } catch (error) {
       console.error("Error loading invoice for edit:", error)
     }
