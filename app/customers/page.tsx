@@ -582,14 +582,14 @@ function CustomersPageContent() {
       result.sort((a, b) => {
         const aValue = a[sortConfig.key as keyof Customer]
         const bValue = b[sortConfig.key as keyof Customer]
-
+      
         if (aValue === bValue) return 0
-        
-        if (sortConfig.direction === 'asc') {
-          return aValue < bValue ? -1 : 1
-        } else {
-          return aValue > bValue ? -1 : 1
-        }
+      
+        const aStr = String(aValue ?? "")
+        const bStr = String(bValue ?? "")
+      
+        const cmp = aStr.localeCompare(bStr, "sl", { sensitivity: "base" })
+        return sortConfig.direction === 'asc' ? cmp : -cmp
       })
     }
 
