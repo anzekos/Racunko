@@ -226,7 +226,7 @@ export default function InvoiceLedgerPage() {
     return (
       <tr key={inv.id} style={{ backgroundColor: rowBg }}>
         <td style={{ ...TD_STYLE, textAlign: "left", fontWeight: 500 }}>{inv.customer.Stranka}</td>
-        <td style={{ ...TD_STYLE, textAlign: "left", color: "#555", fontSize: "11px" }}>
+        <td style={{ ...TD_STYLE, textAlign: "left", color: "oklch", fontSize: "12px" }}>
           {inv.items.length > 0 ? inv.items.map(i => i.description).join(", ") : inv.serviceDescription || "—"}
         </td>
         <td style={{ ...TD_STYLE, textAlign: "right" }}>{fmt(inv.totalWithoutVat)}</td>
