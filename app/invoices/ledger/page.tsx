@@ -232,7 +232,7 @@ export default function InvoiceLedgerPage() {
         <td style={{ ...TD_STYLE, textAlign: "right" }}>{fmt(inv.totalWithoutVat)}</td>
         <td style={{ ...TD_STYLE, textAlign: "right" }}>{fmt(inv.vat)}</td>
         <td style={{ ...TD_STYLE, textAlign: "right", fontWeight: 600 }}>{fmt(inv.totalPayable)}</td>
-        <td style={{ ...TD_STYLE, textAlign: "right", color: "#1d4ed8", fontFamily: "monospace", fontSize: "11px" }}>
+        <td style={{ ...TD_STYLE, textAlign: "right", color: "oklch", fontFamily: "Arial, sans-serif", fontSize: "12px" }}>
           {inv.invoiceNumber}
         </td>
         <td style={{ ...TD_STYLE, textAlign: "right" }}>
