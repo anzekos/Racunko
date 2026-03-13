@@ -1,9 +1,6 @@
-import type { SavedInvoice } from "./database"
+import type { SavedOffer } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
-
-// Type za Offer (offerNumber namesto invoiceNumber)
-type SavedOffer = SavedInvoice & { offerNumber: string }
 
 // Pomožna funkcija za pretvorbo oklch barv v hex/rgb
 function convertOklchToHex(oklchValue: string): string {
@@ -68,7 +65,7 @@ function addFooterToPDF(pdf: jsPDF, offer: SavedOffer) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' })
 }
 
-// High-DPI PDF render za ponudbo
+// High-DPI PDF render za ponudbo (rastrov, fallback)
 export async function generateOfferPDFFromElement(
   element: HTMLElement,
   offer: SavedOffer
@@ -186,29 +183,80 @@ export function downloadOfferPDFFromPreview(
   offer: SavedOffer,
   previewElementId: string = 'offer-preview-content'
 ) {
-  const customerName = offer.customer.Stranka
-    .replace(/[<>:"/\\|?*]/g, '')
-    .replace(/\s+/g, ' ')
+  const customerName = (offer.customer.Stranka || "")
+    .replace(/[<>:"/\\|?*]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
 
-  const offerNum = offer.offerNumber
-    .replace(/[^a-zA-Z0-9-]/g, ' ')
+  const offerNum = (offer.offerNumber || "")
+    .replace(/[^a-zA-Z0-9-]/g, " ")
     .trim()
 
-  const filename = `${offerNum} ${customerName}.pdf`
+  const filename = `${offerNum} ${customerName}`.trim() || "ponudba.pdf"
 
-  const element = document.getElementById(previewElementId)
-  if (!element) {
-    alert('Napaka: Predogled ponudbe ni bil najden.')
+  // Če imamo ID ponudbe, uporabimo server-side generiranje (Playwright, vektorski PDF)
+  if (offer.id) {
+    document.body.style.cursor = "wait"
+    fetch(`/api/offers/${encodeURIComponent(offer.id)}/pdf`, {
+      method: "GET",
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const msg = await res.text().catch(() => "")
+          throw new Error(msg || `HTTP ${res.status}`)
+        }
+        return await res.blob()
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+      // Fallback na obstoječi klient-side raster, če server-side ne uspe
+      .catch(async (error) => {
+        console.error("Napaka pri prenosu PDF ponudbe:", error)
+        const element = document.getElementById(previewElementId)
+        if (!element) throw error
+        const pdfBlob = await generateOfferPDFFromElement(element, offer)
+        const url = URL.createObjectURL(pdfBlob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+      .catch((error) => {
+        console.error("Napaka pri generiranju PDF ponudbe:", error)
+        alert("Napaka pri generiranju PDF ponudbe: " + (error?.message || String(error)))
+      })
+      .finally(() => {
+        document.body.style.cursor = "default"
+      })
+
     return
   }
 
-  document.body.style.cursor = 'wait'
+  // Brez ID-ja ostanemo na obstoječem klient-side renderju
+  const element = document.getElementById(previewElementId)
+  if (!element) {
+    console.error('Element z ID "' + previewElementId + '" ni bil najden')
+    alert("Napaka: Predogled ponudbe ni bil najden.")
+    return
+  }
+
+  document.body.style.cursor = "wait"
 
   generateOfferPDFFromElement(element, offer)
-    .then(blob => {
+    .then((blob) => {
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      const a = document.createElement("a")
       a.href = url
       a.download = filename
       document.body.appendChild(a)
@@ -216,12 +264,12 @@ export function downloadOfferPDFFromPreview(
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err)
-      alert('Napaka pri generiranju PDF-ja: ' + err.message)
+      alert("Napaka pri generiranju PDF-ja: " + (err?.message || String(err)))
     })
     .finally(() => {
-      document.body.style.cursor = 'default'
+      document.body.style.cursor = "default"
     })
 }
 

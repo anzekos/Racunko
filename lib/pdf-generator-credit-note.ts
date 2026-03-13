@@ -1,9 +1,6 @@
-import type { SavedInvoice } from "./database"
+import type { SavedCreditNote } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
-
-// Type za CreditNote (ima creditNoteNumber namesto invoiceNumber)
-type SavedCreditNote = SavedInvoice & { creditNoteNumber: string }
 
 // Pomožna funkcija za pretvorbo oklch barv v hex/rgb
 function convertOklchToHex(oklchValue: string): string {
@@ -62,7 +59,7 @@ function addFooterToPDF(pdf: jsPDF, creditNote: SavedCreditNote) {
   pdf.text('TRR: SI56 0223 6026 1489 640 (NLB)', pageWidth - margin - textOffset, footerY - 2, { align: 'right' });
 }
 
-// Funkcija za generiranje PDF-ja iz elementa
+// Funkcija za generiranje PDF-ja iz elementa (rastrov, fallback)
 export async function generateCreditNotePDFFromElement(element: HTMLElement, creditNote: SavedCreditNote): Promise<Blob> {
   try {
     // Skrijemo akcijske gumbe
@@ -190,15 +187,71 @@ async function compressPNG(dataUrl: string, quality: number): Promise<string> {
 
 // Funkcija za prenos PDF-ja
 export function downloadCreditNotePDFFromPreview(creditNote: SavedCreditNote, previewElementId: string = 'credit-note-preview-content') {
-  // Default ime PDF: "Ime stranke + št. dobropisa"
-  const customerName = creditNote.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-  const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
-  const filename = `${creditNoteNum} ${customerName}.pdf`
+  const safeCustomerName = (creditNote.customer.Stranka || "")
+    .replace(/[<>:"/\\|?*]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  const safeCreditNoteNum = (creditNote.creditNoteNumber || "").replace(/[^a-zA-Z0-9]/g, " ").trim()
+  const filename = `${safeCreditNoteNum} ${safeCustomerName}`.trim() || "dobropis.pdf"
 
+  // Če imamo ID dobropisa, poskusimo server-side (Playwright, vektorski PDF)
+  if (creditNote.id) {
+    document.body.style.cursor = "wait"
+    fetch(`/api/credit-notes/${encodeURIComponent(creditNote.id)}/pdf`, {
+      method: "GET",
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const msg = await res.text().catch(() => "")
+          throw new Error(msg || `HTTP ${res.status}`)
+        }
+        return await res.blob()
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+      // Fallback na klient-side raster, če server-side ne uspe
+      .catch(async (error) => {
+        console.error("Napaka pri prenosu PDF dobropisa:", error)
+        const element = document.getElementById(previewElementId)
+        if (!element) throw error
+        const pdfBlob = await generateCreditNotePDFFromElement(element, creditNote)
+        const url = URL.createObjectURL(pdfBlob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+      .catch((error) => {
+        console.error("Napaka pri generiranju PDF dobropisa:", error)
+        alert("Napaka pri generiranju PDF dobropisa: " + (error?.message || String(error)))
+      })
+      .finally(() => {
+        document.body.style.cursor = "default"
+      })
+
+    return
+  }
+
+  // Brez ID-ja ostanemo na obstoječem klient-side renderju
   const element = document.getElementById(previewElementId)
   if (!element) {
-    throw new Error(`Element z ID "${previewElementId}" ni bil najden`)
+    console.error(`Element z ID "${previewElementId}" ni bil najden`)
+    alert('Napaka: Predogled dobropisa ni bil najden.')
+    return
   }
+
+  document.body.style.cursor = "wait"
 
   generateCreditNotePDFFromElement(element, creditNote)
     .then((pdfBlob) => {
@@ -211,9 +264,12 @@ export function downloadCreditNotePDFFromPreview(creditNote: SavedCreditNote, pr
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     })
-    .catch(error => {
-      console.error('Napaka pri generiranju PDF-ja:', error)
-      alert('Napaka pri generiranju PDF-ja: ' + error.message)
+    .catch((error) => {
+      console.error("Napaka pri generiranju PDF dobropisa:", error)
+      alert("Napaka pri generiranju PDF dobropisa: " + (error?.message || String(error)))
+    })
+    .finally(() => {
+      document.body.style.cursor = "default"
     })
 }
 
