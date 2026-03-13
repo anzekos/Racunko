@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Download, Mail, Printer } from "lucide-react"
 import type { CreditNote } from "@/lib/database"
 import Image from "next/image"
-import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
 import { openEmailClient, sendCreditNoteEmail } from "@/lib/email-service-credit-note"
 
 const formatNumber = (value: number): string => {
@@ -28,7 +27,7 @@ export function CreditNotePreview({ creditNote, onDownload, onSendEmail }: Credi
   }
 
   const handleDirectDownload = () => {
-    downloadCreditNotePDFFromPreview(creditNote, 'credit-note-preview-content')
+    onDownload()
   }
 
   const handleDirectEmail = () => {

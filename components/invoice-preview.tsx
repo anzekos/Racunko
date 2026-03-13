@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Download, Mail, Printer } from "lucide-react"
 import type { Invoice } from "@/lib/database"
 import Image from "next/image"
-import { downloadInvoicePDFFromPreview } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 
 // Pomožna funkcija za formatiranje številk po evropskem standardu
@@ -28,7 +27,7 @@ export function InvoicePreview({ invoice, onDownload, onSendEmail }: InvoicePrev
   }
 
   const handleDirectDownload = () => {
-    downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
+    onDownload()
   }
 
   const handleDirectEmail = () => {

@@ -261,3 +261,8 @@ export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElem
         document.body.style.cursor = 'default'
     })
 }
+
+// Alias funkcija za enostaven klic brez ID elementa
+export function downloadInvoicePDF(invoice: SavedInvoice) {
+  downloadInvoicePDFFromPreview(invoice, 'invoice-preview-content')
+}

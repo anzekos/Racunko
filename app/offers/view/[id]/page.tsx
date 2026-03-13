@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { OfferPreview } from "@/components/offer-preview"
 import { ArrowLeft, Edit, Copy, CheckCircle, XCircle } from "lucide-react"
 import { fetchOfferById, type SavedOffer, updateOfferStatus } from "@/lib/database"
-import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
+import { downloadOfferPDF } from "@/lib/pdf-generator-offer"
 import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 
 export default function OfferViewPage() {
@@ -41,7 +41,7 @@ export default function OfferViewPage() {
 
   const handleDownloadPDF = () => {
     if (offer) {
-      downloadOfferPDFFromPreview(offer)
+      downloadOfferPDF(offer)
     }
   }
 

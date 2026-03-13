@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Download, Mail, Printer } from "lucide-react"
 import type { Offer } from "@/lib/database"
 import Image from "next/image"
-import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
 import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 
 const formatNumber = (value: number): string => {
@@ -28,7 +27,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
   }
 
   const handleDirectDownload = () => {
-    downloadOfferPDFFromPreview(offer, 'offer-preview-content')
+    onDownload()
   }
 
   const handleDirectEmail = () => {
