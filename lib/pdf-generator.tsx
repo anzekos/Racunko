@@ -2,6 +2,21 @@ import type { SavedInvoice } from "./database"
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
+async function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function safeFilenamePart(value: string) {
+  return value.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "").replace(/\s+/g, " ").trim()
+}
+
 // Pomožna funkcija za pretvorbo oklch barv v hex/rgb
 function convertOklchToHex(oklchValue: string): string {
   if (!oklchValue.includes('oklch')) return oklchValue
@@ -191,10 +206,40 @@ export async function generateInvoicePDFFromElement(element: HTMLElement, invoic
 }
 
 export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElementId: string = 'invoice-preview-content') {
-  // Čiščenje imena datoteke
-  const customerName = invoice.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ").trim()
-  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, " ").trim() // Dovolimo vezaj
-  const filename = `${invoiceNum} ${customerName}.pdf`
+  const customerName = safeFilenamePart(invoice.customer.Stranka || "")
+  const invoiceNum = safeFilenamePart(invoice.invoiceNumber || "")
+  const filename = `${invoiceNum} ${customerName}.pdf`.trim() || "racun.pdf"
+
+  // Če račun ima ID, uporabimo server-side "print to PDF" (selectable tekst).
+  if (invoice.id) {
+    document.body.style.cursor = "wait"
+    fetch(`/api/invoices/${encodeURIComponent(invoice.id)}/pdf`, {
+      method: "GET",
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const msg = await res.text().catch(() => "")
+          throw new Error(msg || `HTTP ${res.status}`)
+        }
+        return await res.blob()
+      })
+      .then((blob) => downloadBlob(blob, filename))
+      .catch((error) => {
+        console.error("Napaka pri prenosu PDF-ja:", error)
+        // Fallback na staro metodo (raster), če server-side ne uspe.
+        const element = document.getElementById(previewElementId)
+        if (!element) throw error
+        return generateInvoicePDFFromElement(element, invoice).then((blob) => downloadBlob(blob, filename))
+      })
+      .catch((error) => {
+        console.error("Napaka pri generiranju PDF-ja:", error)
+        alert("Napaka pri generiranju PDF-ja: " + (error?.message || String(error)))
+      })
+      .finally(() => {
+        document.body.style.cursor = "default"
+      })
+    return
+  }
 
   const element = document.getElementById(previewElementId)
   if (!element) {
@@ -207,16 +252,7 @@ export function downloadInvoicePDFFromPreview(invoice: SavedInvoice, previewElem
   document.body.style.cursor = 'wait'
 
   generateInvoicePDFFromElement(element, invoice)
-    .then((pdfBlob) => {
-      const url = URL.createObjectURL(pdfBlob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    })
+    .then((pdfBlob) => downloadBlob(pdfBlob, filename))
     .catch(error => {
       console.error('Napaka pri generiranju PDF-ja:', error)
       alert('Napaka pri generiranju PDF-ja: ' + error.message)
