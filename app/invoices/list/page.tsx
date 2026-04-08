@@ -109,40 +109,48 @@ export default function InvoicesListPage() {
   // Funkcija za množično prenašanje BREZ ZIP
   const handleBulkDownload = async () => {
     if (selectedInvoices.length === 0) return
+
     setIsBulkDownloading(true)
     const selectedInvoiceData = invoices.filter(invoice => selectedInvoices.includes(invoice.id!))
-  
+
     try {
       for (const invoice of selectedInvoiceData) {
-        const customerName = invoice.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-        const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, " ")
-        const filename = `${invoiceNum} ${customerName}.pdf`.trim()
-  
-        document.body.style.cursor = "wait"
-        try {
-          const res = await fetch(`/api/invoices/${invoice.id}/pdf`)
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const blob = await res.blob()
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = filename
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
-          // Kratka pavza med downloadi
-          await new Promise(r => setTimeout(r, 500))
-        } catch (error) {
-          console.error(`Napaka pri prenosu ${invoice.invoiceNumber}:`, error)
-        }
+        await new Promise<void>(async (resolve) => {
+          setPdfInvoice(invoice)
+          
+          // Počakamo, da se komponenta naloži v DOM
+          setTimeout(async () => {
+            try {
+              const element = document.getElementById('invoice-preview-content')
+              if (!element) {
+                console.error('Element not found for invoice:', invoice.invoiceNumber)
+                resolve()
+                return
+              }
+
+              const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
+              const url = URL.createObjectURL(pdfBlob)
+              const a = document.createElement("a")
+              a.href = url
+              a.download = generatePDFFilename(invoice)
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              
+              // Počakamo malo preden sprostimo URL, da se prenos zaključi
+              setTimeout(() => {
+                URL.revokeObjectURL(url)
+                resolve()
+              }, 100)
+            } catch (error) {
+              console.error(`Napaka pri prenosu računa ${invoice.invoiceNumber}:`, error)
+              resolve()
+            } finally {
+              setPdfInvoice(null)
+            }
+          }, 1000)
+        })
       }
-      setSelectedInvoices([])
-    } finally {
-      setIsBulkDownloading(false)
-      document.body.style.cursor = "default"
-    }
-  }
       
       // Počistimo izbire po uspešnem prenosu
       setSelectedInvoices([])
@@ -155,29 +163,32 @@ export default function InvoicesListPage() {
   }
 
   const handleDownload = async (invoice: SavedInvoice) => {
-    const customerName = invoice.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-    const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, " ")
-    const filename = `${invoiceNum} ${customerName}.pdf`.trim()
+    setPdfInvoice(invoice)
+    
+    setTimeout(async () => {
+      try {
+        const element = document.getElementById('invoice-preview-content')
+        if (!element) {
+          console.error('Element not found!')
+          throw new Error('Preview element not found')
+        }
   
-    document.body.style.cursor = "wait"
-    try {
-      const res = await fetch(`/api/invoices/${invoice.id}/pdf`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Napaka pri prenosu PDF-ja:', error)
-      alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
-    } finally {
-      document.body.style.cursor = "default"
-    }
+        const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
+        const url = URL.createObjectURL(pdfBlob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = generatePDFFilename(invoice) // Nova funkcija za ime
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error('Napaka pri prenosu PDF-ja:', error)
+        alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
+      } finally {
+        setPdfInvoice(null)
+      }
+    }, 1000)
   }
 
   const handleDelete = async (id: string, invoiceNumber: string) => {
