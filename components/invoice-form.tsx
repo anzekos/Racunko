@@ -141,15 +141,17 @@ export function InvoiceForm({
   }
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string) => {
-    const key = `${index}-${field}`
-    setRawValues(prev => ({ ...prev, [key]: value }))
-
-    const numeric = parseFloat(value)
     const newItems = [...items]
-    newItems[index] = { ...newItems[index], [field]: isNaN(numeric) ? 0 : numeric }
 
     if (field === "quantity" || field === "price") {
+      const key = `${index}-${field}`
+      setRawValues(prev => ({ ...prev, [key]: value }))
+
+      const numeric = parseFloat(value)
+      newItems[index] = { ...newItems[index], [field]: isNaN(numeric) ? 0 : numeric }
       newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
+    } else {
+      newItems[index] = { ...newItems[index], [field]: value }
     }
 
     setItems(newItems)
