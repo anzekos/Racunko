@@ -236,7 +236,6 @@ export function OfferForm({
                   <Label>Količina</Label>
                   <Input
                     type="number"
-                    min="0"
                     step="0.01"
                     value={item.quantity}
                     onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
@@ -246,7 +245,6 @@ export function OfferForm({
                   <Label>Cena (EUR)</Label>
                   <Input
                     type="number"
-                    min="0"
                     step="0.01"
                     value={item.price}
                     onChange={(e) => updateItem(index, "price", Number(e.target.value))}
