@@ -38,6 +38,7 @@ export function CreditNoteForm({
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split("T")[0])
   const [serviceDescription, setServiceDescription] = useState("")
   const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, price: 0, total: 0 }])
+  const [rawValues, setRawValues] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (editingCreditNote) {
@@ -74,9 +75,13 @@ export function CreditNoteForm({
     }
   }
 
-  const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
+  const updateItem = (index: number, field: keyof InvoiceItem, value: string) => {
+    const key = `${index}-${field}`
+    setRawValues(prev => ({ ...prev, [key]: value }))
+
+    const numeric = parseFloat(value)
     const newItems = [...items]
-    newItems[index] = { ...newItems[index], [field]: value }
+    newItems[index] = { ...newItems[index], [field]: isNaN(numeric) ? 0 : numeric }
 
     if (field === "quantity" || field === "price") {
       newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
@@ -244,21 +249,29 @@ export function CreditNoteForm({
                 <div className="col-span-2 space-y-2">
                   <Label>Količina</Label>
                   <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
+                    value={rawValues[`${index}-quantity`] ?? item.quantity}
+                    onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                    onBlur={(e) => {
+                      const numeric = parseFloat(e.target.value)
+                      const key = `${index}-quantity`
+                      setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
+                    }}
                   />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label>Cena (EUR)</Label>
                   <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.price}
-                    onChange={(e) => updateItem(index, "price", Number(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
+                    value={rawValues[`${index}-price`] ?? item.price}
+                    onChange={(e) => updateItem(index, "price", e.target.value)}
+                    onBlur={(e) => {
+                      const numeric = parseFloat(e.target.value)
+                      const key = `${index}-price`
+                      setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
+                    }}
                   />
                 </div>
                 <div className="col-span-2 space-y-2">
