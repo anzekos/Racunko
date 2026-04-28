@@ -208,7 +208,7 @@ export default function CreditNotesListPage() {
         await loadCreditNotes()
       }
       
-      openEmailClient(creditNote, 'credit-note')
+      openEmailClient(creditNote)
     } catch (error) {
       console.error("Error sending email:", error)
       alert("Napaka pri pošiljanju e-pošte")

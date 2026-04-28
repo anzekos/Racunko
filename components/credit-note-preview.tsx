@@ -31,7 +31,7 @@ export function CreditNotePreview({ creditNote, onDownload, onSendEmail }: Credi
   }
 
   const handleDirectEmail = () => {
-    openEmailClient(creditNote, 'credit-note')
+    openEmailClient(creditNote)
   }
 
   return (
