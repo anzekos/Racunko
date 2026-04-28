@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, Calculator, Loader2, Copy } from "lucide-react"
 import type { Customer, InvoiceItem, SavedCreditNote, CreditNote } from "@/lib/database"
 import { CustomerAutocomplete } from "@/components/invoice-form"
+import { parseLocaleNumber } from "@/lib/utils"
 
 interface CreditNoteFormProps {
   customers: Customer[]
@@ -82,7 +83,7 @@ export function CreditNoteForm({
       const key = `${index}-${field}`
       setRawValues(prev => ({ ...prev, [key]: value }))
 
-      const numeric = parseFloat(value)
+      const numeric = parseLocaleNumber(value)
       newItems[index] = { ...newItems[index], [field]: isNaN(numeric) ? 0 : numeric }
       newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
     } else {
