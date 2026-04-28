@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, Calculator, Loader2, Copy } from "lucide-react"
 import type { Customer, Invoice, InvoiceItem, SavedInvoice } from "@/lib/database"
+import { parseLocaleNumber } from "@/lib/utils"
 
 interface InvoiceFormProps {
   customers: Customer[]
@@ -147,7 +148,7 @@ export function InvoiceForm({
       const key = `${index}-${field}`
       setRawValues(prev => ({ ...prev, [key]: value }))
 
-      const numeric = parseFloat(value)
+      const numeric = parseLocaleNumber(value)
       newItems[index] = { ...newItems[index], [field]: isNaN(numeric) ? 0 : numeric }
       newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
     } else {
@@ -319,7 +320,7 @@ export function InvoiceForm({
                   value={rawValues[`${index}-quantity`] ?? item.quantity}
                   onChange={(e) => updateItem(index, "quantity", e.target.value)}
                   onBlur={(e) => {
-                    const numeric = parseFloat(e.target.value)
+                    const numeric = parseLocaleNumber(e.target.value)
                     const key = `${index}-quantity`
                     setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
                   }}
@@ -332,7 +333,7 @@ export function InvoiceForm({
                     value={rawValues[`${index}-price`] ?? item.price}
                     onChange={(e) => updateItem(index, "price", e.target.value)}
                     onBlur={(e) => {
-                      const numeric = parseFloat(e.target.value)
+                      const numeric = parseLocaleNumber(e.target.value)
                       const key = `${index}-price`
                       setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
                     }}

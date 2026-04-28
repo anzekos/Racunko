@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, Calculator, Loader2, Copy } from "lucide-react"
 import type { Customer, InvoiceItem, SavedOffer, Offer } from "@/lib/database"
 import { CustomerAutocomplete } from "@/components/invoice-form"
+import { parseLocaleNumber } from "@/lib/utils"
 
 interface OfferFormProps {
   customers: Customer[]
@@ -82,7 +83,7 @@ export function OfferForm({
       const key = `${index}-${field}`
       setRawValues(prev => ({ ...prev, [key]: value }))
 
-      const numeric = parseFloat(value)
+      const numeric = parseLocaleNumber(value)
       newItems[index] = { ...newItems[index], [field]: isNaN(numeric) ? 0 : numeric }
       newItems[index].total = Number(newItems[index].quantity) * Number(newItems[index].price)
     } else {
@@ -247,7 +248,7 @@ export function OfferForm({
                     value={rawValues[`${index}-quantity`] ?? item.quantity}
                     onChange={(e) => updateItem(index, "quantity", e.target.value)}
                     onBlur={(e) => {
-                      const numeric = parseFloat(e.target.value)
+                      const numeric = parseLocaleNumber(e.target.value)
                       const key = `${index}-quantity`
                       setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
                     }}
@@ -261,7 +262,7 @@ export function OfferForm({
                     value={rawValues[`${index}-price`] ?? item.price}
                     onChange={(e) => updateItem(index, "price", e.target.value)}
                     onBlur={(e) => {
-                      const numeric = parseFloat(e.target.value)
+                      const numeric = parseLocaleNumber(e.target.value)
                       const key = `${index}-price`
                       setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
                     }}
