@@ -248,7 +248,7 @@ export function OfferForm({
                     value={rawValues[`${index}-quantity`] ?? item.quantity}
                     onChange={(e) => updateItem(index, "quantity", e.target.value)}
                     onBlur={(e) => {
-                      const numeric = parseFloat(e.target.value)
+                      const numeric = parseLocaleNumber(e.target.value)
                       const key = `${index}-quantity`
                       setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
                     }}
@@ -262,7 +262,7 @@ export function OfferForm({
                     value={rawValues[`${index}-price`] ?? item.price}
                     onChange={(e) => updateItem(index, "price", e.target.value)}
                     onBlur={(e) => {
-                      const numeric = parseFloat(e.target.value)
+                      const numeric = parseLocaleNumber(e.target.value)
                       const key = `${index}-price`
                       setRawValues(prev => ({ ...prev, [key]: isNaN(numeric) ? "0" : String(numeric) }))
                     }}
