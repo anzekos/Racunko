@@ -48,7 +48,7 @@ export default function OfferViewPage() {
   const handleSendEmail = async () => {
     if (offer) {
       try {
-        await openEmailClient(offer, 'offer')
+        await openEmailClient(offer)
         await loadOffer(offer.id!)
       } catch (error) {
         console.error("Error sending email:", error)

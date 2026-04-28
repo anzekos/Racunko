@@ -208,7 +208,7 @@ export default function OffersListPage() {
         await loadOffers()
       }
       
-      openEmailClient(offer, 'offer')
+      openEmailClient(offer)
     } catch (error) {
       console.error("Error sending email:", error)
       alert("Napaka pri pošiljanju e-pošte")

@@ -31,7 +31,7 @@ export function OfferPreview({ offer, onDownload, onSendEmail }: OfferPreviewPro
   }
 
   const handleDirectEmail = () => {
-    openEmailClient(offer, 'offer')
+    openEmailClient(offer)
   }
 
   return (
