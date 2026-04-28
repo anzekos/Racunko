@@ -48,7 +48,7 @@ export default function CreditNoteViewPage() {
   const handleSendEmail = async () => {
     if (creditNote) {
       try {
-        await openEmailClient(creditNote, 'credit-note')
+        await openEmailClient(creditNote)
         await loadCreditNote(creditNote.id!)
       } catch (error) {
         console.error("Error sending email:", error)

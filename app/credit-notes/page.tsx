@@ -130,7 +130,7 @@ function CreditNotesPageContent() {
   const handleSendEmail = async () => {
     if (currentCreditNote) {
       try {
-        openEmailClient(currentCreditNote, 'credit-note')
+        openEmailClient(currentCreditNote)
       } catch (error) {
         console.error("Error sending email:", error)
         alert("Napaka pri pošiljanju e-pošte. Preverite e-poštni naslov stranke.")
