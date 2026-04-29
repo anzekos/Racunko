@@ -27,9 +27,7 @@ export default function OfferPrintPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 print:p-0">
-      <style jsx global>{`
-        .normal-footer { display: none !important; }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: `.normal-footer { display: none !important; }` }} />
       <OfferPreview offer={offer} onDownload={() => {}} onSendEmail={() => {}} />
     </div>
   )

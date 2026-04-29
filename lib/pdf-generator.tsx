@@ -1,4 +1,5 @@
 import type { SavedInvoice } from "./database"
+import { fetchVectorPDFBlob } from "./pdf-fetch"
 
 function safeFilenamePart(value: string) {
   return value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "").replace(/\s+/g, " ").trim()
@@ -20,12 +21,7 @@ function downloadBlob(blob: Blob, filename: string) {
  * server-side Playwright pipeline-a. Brez rasteriziranja vsebine.
  */
 export async function fetchInvoicePDFBlob(invoiceId: string): Promise<Blob> {
-  const res = await fetch(`/api/invoices/${encodeURIComponent(invoiceId)}/pdf`, { method: "GET" })
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "")
-    throw new Error(msg || `HTTP ${res.status}`)
-  }
-  return await res.blob()
+  return fetchVectorPDFBlob(`/api/invoices/${encodeURIComponent(invoiceId)}/pdf`)
 }
 
 export function downloadInvoicePDF(invoice: SavedInvoice) {

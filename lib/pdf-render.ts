@@ -1,4 +1,4 @@
-import { chromium } from "playwright"
+import { chromium, type LaunchOptions } from "playwright"
 
 /**
  * Vektorski footer, ki ga Chrome (Playwright) izriše kot besedilo na vsaki strani PDF-ja
@@ -32,9 +32,21 @@ const EMPTY_HEADER_TEMPLATE = `<div></div>`
 /**
  * Generira vektorski PDF iz interne URL strani. Poskrbi, da so fonti naloženi
  * in slike pripravljene preden začne izvoz.
+ *
+ * Brskalniku posredujemo `--no-sandbox` argument (potreben pri zagonu kot root
+ * v Dockerju ali na strežnikih brez user namespace-ov). Pot do izvedljive
+ * datoteke lahko prepišemo z env spremenljivko `PLAYWRIGHT_CHROMIUM_PATH`,
+ * v primeru, da Chromium binary ni na privzeti Playwright lokaciji.
  */
 export async function renderDocumentPDF(targetUrl: string, waitSelector: string): Promise<Buffer> {
-  const browser = await chromium.launch()
+  const launchOptions: LaunchOptions = {
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  }
+  const customExecutable = process.env.PLAYWRIGHT_CHROMIUM_PATH
+  if (customExecutable) {
+    launchOptions.executablePath = customExecutable
+  }
+  const browser = await chromium.launch(launchOptions)
   try {
     const page = await browser.newPage()
     await page.goto(targetUrl, { waitUntil: "networkidle" })

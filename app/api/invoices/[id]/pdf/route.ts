@@ -51,6 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     console.error("Napaka pri generiranju PDF-ja:", error)
-    return NextResponse.json({ error: "Napaka pri generiranju PDF-ja" }, { status: 500 })
+    const detail = error instanceof Error ? error.message : String(error)
+    return NextResponse.json({ error: "Napaka pri generiranju PDF-ja", detail }, { status: 500 })
   }
 }
