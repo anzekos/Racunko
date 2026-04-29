@@ -1,4 +1,4 @@
-import { chromium, type LaunchOptions } from "playwright"
+import { chromium, type LaunchOptions } from "playwright-core"
 
 /**
  * Vektorski footer, ki ga Chrome (Playwright) izriše kot besedilo na vsaki strani PDF-ja
@@ -29,23 +29,43 @@ export const PDF_FOOTER_TEMPLATE = `
 // Prazen header (Chrome zahteva ne-prazen template, drugače uporabi default)
 const EMPTY_HEADER_TEMPLATE = `<div></div>`
 
+const isServerless =
+  !!process.env.VERCEL ||
+  !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  !!process.env.LAMBDA_TASK_ROOT
+
 /**
- * Generira vektorski PDF iz interne URL strani. Poskrbi, da so fonti naloženi
- * in slike pripravljene preden začne izvoz.
- *
- * Brskalniku posredujemo `--no-sandbox` argument (potreben pri zagonu kot root
- * v Dockerju ali na strežnikih brez user namespace-ov). Pot do izvedljive
- * datoteke lahko prepišemo z env spremenljivko `PLAYWRIGHT_CHROMIUM_PATH`,
- * v primeru, da Chromium binary ni na privzeti Playwright lokaciji.
+ * V serverless okolju (Vercel/Lambda) uporabimo @sparticuz/chromium — Chromium
+ * binary stisnjen za 50/250MB function size limit. Lokalno uporabimo običajen
+ * Playwright Chromium (`npx playwright install chromium`), z možnostjo override-a
+ * preko PLAYWRIGHT_CHROMIUM_PATH.
  */
-export async function renderDocumentPDF(targetUrl: string, waitSelector: string): Promise<Buffer> {
+async function buildLaunchOptions(): Promise<LaunchOptions> {
+  if (isServerless) {
+    const sparticuzModule = await import("@sparticuz/chromium")
+    const sparticuz = sparticuzModule.default ?? sparticuzModule
+    return {
+      args: sparticuz.args,
+      executablePath: await sparticuz.executablePath(),
+      headless: true,
+    }
+  }
+
   const launchOptions: LaunchOptions = {
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
   }
-  const customExecutable = process.env.PLAYWRIGHT_CHROMIUM_PATH
-  if (customExecutable) {
-    launchOptions.executablePath = customExecutable
+  if (process.env.PLAYWRIGHT_CHROMIUM_PATH) {
+    launchOptions.executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH
   }
+  return launchOptions
+}
+
+/**
+ * Generira vektorski PDF iz interne URL strani. Poskrbi, da so fonti naloženi
+ * in slike pripravljene preden začne izvoz.
+ */
+export async function renderDocumentPDF(targetUrl: string, waitSelector: string): Promise<Buffer> {
+  const launchOptions = await buildLaunchOptions()
   const browser = await chromium.launch(launchOptions)
   try {
     const page = await browser.newPage()

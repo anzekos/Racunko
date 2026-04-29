@@ -10,6 +10,9 @@ interface RouteParams {
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+// PDF render z headless Chromium (~3–8s); privzeti 10s timeout na Vercel Hobby
+// je pretesen, zato dvignemo na 60s (max za Pro).
+export const maxDuration = 60
 
 function safeFilenamePart(value: string) {
   return value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "").replace(/\s+/g, " ").trim()
