@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FileText, ArrowLeft, Copy } from "lucide-react"
 import { fetchCustomers, fetchOffers, saveOffer, updateOffer, type Customer, type Offer, type SavedOffer } from "@/lib/database"
-import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
+import { downloadOfferPDF } from "@/lib/pdf-generator-offer"
 import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 import { Suspense } from "react"
 

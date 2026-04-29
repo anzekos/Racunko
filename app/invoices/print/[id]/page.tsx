@@ -27,6 +27,10 @@ export default function InvoicePrintPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 print:p-0">
+      {/* Footer pripada PDF pipeline-u (Playwright footerTemplate), zato ga skrijemo iz vsebine. */}
+      <style jsx global>{`
+        .normal-footer { display: none !important; }
+      `}</style>
       {/* Print-only: brez navigacije, samo dokument */}
       <InvoicePreview invoice={invoice} onDownload={() => {}} onSendEmail={() => {}} />
     </div>

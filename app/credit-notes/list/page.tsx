@@ -24,11 +24,10 @@ import {
   Receipt
 } from "lucide-react"
 import { fetchCreditNotes, deleteCreditNote, updateCreditNoteStatus, type SavedCreditNote } from "@/lib/database"
-import { downloadCreditNotePDFFromPreview, generateCreditNotePDFFromElement } from "@/lib/pdf-generator-credit-note"
+import { fetchCreditNotePDFBlob } from "@/lib/pdf-generator-credit-note"
 import { openEmailClient, sendCreditNoteEmail } from "@/lib/email-service-credit-note"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { CreditNotePreview } from "@/components/credit-note-preview"
 
 export default function CreditNotesListPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -36,7 +35,6 @@ export default function CreditNotesListPage() {
   const [filteredCreditNotes, setFilteredCreditNotes] = useState<SavedCreditNote[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [pdfCreditNote, setPdfCreditNote] = useState<SavedCreditNote | null>(null)
   const [selectedCreditNotes, setSelectedCreditNotes] = useState<string[]>([])
   const [isBulkDownloading, setIsBulkDownloading] = useState(false)
   const router = useRouter()
@@ -101,6 +99,29 @@ export default function CreditNotesListPage() {
     return selectedCreditNotes.length > 0 && selectedCreditNotes.length < filteredCreditNotes.length
   }
 
+  const buildCreditNoteFilename = (creditNote: SavedCreditNote) => {
+    const customerName = (creditNote.customer.Stranka || "")
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+    const creditNoteNum = (creditNote.creditNoteNumber || "")
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+    return `${creditNoteNum} ${customerName}.pdf`.trim() || "dobropis.pdf"
+  }
+
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   const handleBulkDownload = async () => {
     if (selectedCreditNotes.length === 0) return
 
@@ -109,44 +130,14 @@ export default function CreditNotesListPage() {
 
     try {
       for (const creditNote of selectedCreditNoteData) {
-        await new Promise<void>(async (resolve) => {
-          setPdfCreditNote(creditNote)
-          
-          setTimeout(async () => {
-            try {
-              const element = document.getElementById('credit-note-preview-content')
-              if (!element) {
-                console.error('Element not found for credit note:', creditNote.creditNoteNumber)
-                resolve()
-                return
-              }
-
-              const pdfBlob = await generateCreditNotePDFFromElement(element, creditNote)
-              const url = URL.createObjectURL(pdfBlob)
-              const a = document.createElement("a")
-              const customerName = creditNote.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-              const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
-              const filename = `${creditNoteNum} ${customerName}.pdf`
-              a.href = url
-              a.download = filename
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              
-              setTimeout(() => {
-                URL.revokeObjectURL(url)
-                resolve()
-              }, 100)
-            } catch (error) {
-              console.error(`Napaka pri prenosu dobropisa ${creditNote.creditNoteNumber}:`, error)
-              resolve()
-            } finally {
-              setPdfCreditNote(null)
-            }
-          }, 1000)
-        })
+        try {
+          const pdfBlob = await fetchCreditNotePDFBlob(creditNote.id!)
+          triggerBlobDownload(pdfBlob, buildCreditNoteFilename(creditNote))
+        } catch (error) {
+          console.error(`Napaka pri prenosu dobropisa ${creditNote.creditNoteNumber}:`, error)
+        }
       }
-      
+
       setSelectedCreditNotes([])
     } catch (error) {
       console.error('Napaka pri množičnem prenosu:', error)
@@ -157,35 +148,13 @@ export default function CreditNotesListPage() {
   }
 
   const handleDownload = async (creditNote: SavedCreditNote) => {
-    setPdfCreditNote(creditNote)
-    
-    setTimeout(async () => {
-      try {
-        const element = document.getElementById('credit-note-preview-content')
-        if (!element) {
-          console.error('Element not found!')
-          throw new Error('Preview element not found')
-        }
-
-        const pdfBlob = await generateCreditNotePDFFromElement(element, creditNote)
-        const url = URL.createObjectURL(pdfBlob)
-        const a = document.createElement("a")
-        const customerName = creditNote.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-        const creditNoteNum = creditNote.creditNoteNumber.replace(/[^a-zA-Z0-9]/g, " ")
-        const filename = `${creditNoteNum} ${customerName}.pdf`
-        a.href = url
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error('Napaka pri prenosu PDF-ja:', error)
-        alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
-      } finally {
-        setPdfCreditNote(null)
-      }
-    }, 1000)
+    try {
+      const pdfBlob = await fetchCreditNotePDFBlob(creditNote.id!)
+      triggerBlobDownload(pdfBlob, buildCreditNoteFilename(creditNote))
+    } catch (error) {
+      console.error('Napaka pri prenosu PDF-ja:', error)
+      alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
+    }
   }
 
   const handleDelete = async (id: string, creditNoteNumber: string) => {
@@ -569,15 +538,6 @@ export default function CreditNotesListPage() {
         </main>
       </div>
 
-      {pdfCreditNote && (
-        <div style={{ position: 'fixed', left: '-10000px', top: '0', width: '210mm', backgroundColor: 'white' }}>
-          <CreditNotePreview
-            creditNote={pdfCreditNote}
-            onDownload={() => {}}
-            onSendEmail={() => {}}
-          />
-        </div>
-      )}
     </div>
   )
 }

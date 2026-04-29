@@ -22,16 +22,32 @@ import {
   Square
 } from "lucide-react"
 import { fetchInvoices, deleteInvoice, updateInvoiceStatus, type SavedInvoice } from "@/lib/database"
-import { generateInvoicePDFFromElement } from "@/lib/pdf-generator"
+import { fetchInvoicePDFBlob } from "@/lib/pdf-generator"
 import { openEmailClient } from "@/lib/email-service"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { InvoicePreview } from "@/components/invoice-preview"
 
 const generatePDFFilename = (invoice: SavedInvoice): string => {
-  const customerName = invoice.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-  const invoiceNum = invoice.invoiceNumber.replace(/[^a-zA-Z0-9]/g, " ")
-  return `${invoiceNum} ${customerName}.pdf`
+  const customerName = (invoice.customer.Stranka || "")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  const invoiceNum = (invoice.invoiceNumber || "")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  return `${invoiceNum} ${customerName}.pdf`.trim() || "racun.pdf"
+}
+
+const triggerBlobDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 export default function InvoicesListPage() {
@@ -40,7 +56,6 @@ export default function InvoicesListPage() {
   const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [pdfInvoice, setPdfInvoice] = useState<SavedInvoice | null>(null)
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([])
   const [isBulkDownloading, setIsBulkDownloading] = useState(false)
   const router = useRouter()
@@ -106,7 +121,6 @@ export default function InvoicesListPage() {
     return selectedInvoices.length > 0 && selectedInvoices.length < filteredInvoices.length
   }
 
-  // Funkcija za množično prenašanje BREZ ZIP
   const handleBulkDownload = async () => {
     if (selectedInvoices.length === 0) return
 
@@ -115,44 +129,14 @@ export default function InvoicesListPage() {
 
     try {
       for (const invoice of selectedInvoiceData) {
-        await new Promise<void>(async (resolve) => {
-          setPdfInvoice(invoice)
-          
-          // Počakamo, da se komponenta naloži v DOM
-          setTimeout(async () => {
-            try {
-              const element = document.getElementById('invoice-preview-content')
-              if (!element) {
-                console.error('Element not found for invoice:', invoice.invoiceNumber)
-                resolve()
-                return
-              }
-
-              const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
-              const url = URL.createObjectURL(pdfBlob)
-              const a = document.createElement("a")
-              a.href = url
-              a.download = generatePDFFilename(invoice)
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              
-              // Počakamo malo preden sprostimo URL, da se prenos zaključi
-              setTimeout(() => {
-                URL.revokeObjectURL(url)
-                resolve()
-              }, 100)
-            } catch (error) {
-              console.error(`Napaka pri prenosu računa ${invoice.invoiceNumber}:`, error)
-              resolve()
-            } finally {
-              setPdfInvoice(null)
-            }
-          }, 1000)
-        })
+        try {
+          const pdfBlob = await fetchInvoicePDFBlob(invoice.id!)
+          triggerBlobDownload(pdfBlob, generatePDFFilename(invoice))
+        } catch (error) {
+          console.error(`Napaka pri prenosu računa ${invoice.invoiceNumber}:`, error)
+        }
       }
-      
-      // Počistimo izbire po uspešnem prenosu
+
       setSelectedInvoices([])
     } catch (error) {
       console.error('Napaka pri množičnem prenosu:', error)
@@ -163,32 +147,13 @@ export default function InvoicesListPage() {
   }
 
   const handleDownload = async (invoice: SavedInvoice) => {
-    setPdfInvoice(invoice)
-    
-    setTimeout(async () => {
-      try {
-        const element = document.getElementById('invoice-preview-content')
-        if (!element) {
-          console.error('Element not found!')
-          throw new Error('Preview element not found')
-        }
-  
-        const pdfBlob = await generateInvoicePDFFromElement(element, invoice)
-        const url = URL.createObjectURL(pdfBlob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = generatePDFFilename(invoice) // Nova funkcija za ime
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error('Napaka pri prenosu PDF-ja:', error)
-        alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
-      } finally {
-        setPdfInvoice(null)
-      }
-    }, 1000)
+    try {
+      const pdfBlob = await fetchInvoicePDFBlob(invoice.id!)
+      triggerBlobDownload(pdfBlob, generatePDFFilename(invoice))
+    } catch (error) {
+      console.error('Napaka pri prenosu PDF-ja:', error)
+      alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
+    }
   }
 
   const handleDelete = async (id: string, invoiceNumber: string) => {
@@ -572,16 +537,6 @@ export default function InvoicesListPage() {
         </main>
       </div>
 
-      {/* Skrita InvoicePreview komponenta za generiranje PDF-jev */}
-      {pdfInvoice && (
-        <div style={{ position: 'fixed', left: '-10000px', top: '0', width: '210mm', backgroundColor: 'white' }}>
-          <InvoicePreview
-            invoice={pdfInvoice}
-            onDownload={() => {}}
-            onSendEmail={() => {}}
-          />
-        </div>
-      )}
     </div>
   )
 }

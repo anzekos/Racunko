@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { chromium } from "playwright"
 import { query } from "@/lib/db-connection"
+import { renderDocumentPDF } from "@/lib/pdf-render"
 
 interface RouteParams {
   params: {
@@ -12,13 +12,13 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 function safeFilenamePart(value: string) {
-  return value.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "").replace(/\s+/g, " ").trim()
+  return value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "").replace(/\s+/g, " ").trim()
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const offers = await query(
-      `SELECT 
+      `SELECT
         o.offer_number,
         s.Stranka
       FROM Offers o
@@ -35,56 +35,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const customerName = (offers[0].Stranka as string) || ""
 
     const origin = request.nextUrl.origin
-    const targetUrl = `${origin}/offers/view/${encodeURIComponent(params.id)}`
+    const targetUrl = `${origin}/offers/print/${encodeURIComponent(params.id)}`
 
-    const browser = await chromium.launch()
-    try {
-      const page = await browser.newPage()
-      await page.goto(targetUrl, { waitUntil: "networkidle" })
-      await page.waitForSelector("#offer-preview-content", { state: "visible", timeout: 30_000 })
-      await page.emulateMedia({ media: "print" })
+    const pdf = await renderDocumentPDF(targetUrl, "#offer-preview-content")
 
-      // počakamo na fonte in slike
-      await page.evaluate(async () => {
-        // @ts-expect-error: fonts exists in browser
-        await (document as any).fonts?.ready
-        const imgs = Array.from(document.images || [])
-        await Promise.all(
-          imgs.map(
-            (img) =>
-              img.complete
-                ? Promise.resolve()
-                : new Promise<void>((resolve) => {
-                    img.addEventListener("load", () => resolve(), { once: true })
-                    img.addEventListener("error", () => resolve(), { once: true })
-                  })
-          )
-        )
-      })
+    const filename = `${safeFilenamePart(offerNumber)} ${safeFilenamePart(customerName)}.pdf`.trim() || "ponudba.pdf"
 
-      const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        preferCSSPageSize: true,
-        margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
-      })
-
-      const filename = `${safeFilenamePart(offerNumber)} ${safeFilenamePart(customerName)}`.trim() || "ponudba.pdf"
-
-      return new NextResponse(pdf, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="${filename}"`,
-          "Cache-Control": "no-store",
-        },
-      })
-    } finally {
-      await browser.close()
-    }
+    return new NextResponse(pdf, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    })
   } catch (error) {
     console.error("Napaka pri generiranju PDF ponudbe:", error)
     return NextResponse.json({ error: "Napaka pri generiranju PDF ponudbe" }, { status: 500 })
   }
 }
-

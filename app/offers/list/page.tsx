@@ -24,11 +24,10 @@ import {
   TrendingUp
 } from "lucide-react"
 import { fetchOffers, deleteOffer, updateOfferStatus, type SavedOffer } from "@/lib/database"
-import { downloadOfferPDFFromPreview, generateOfferPDFFromElement } from "@/lib/pdf-generator-offer"
+import { fetchOfferPDFBlob } from "@/lib/pdf-generator-offer"
 import { openEmailClient, sendOfferEmail } from "@/lib/email-service-offer"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { OfferPreview } from "@/components/offer-preview"
 
 export default function OffersListPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -36,7 +35,6 @@ export default function OffersListPage() {
   const [filteredOffers, setFilteredOffers] = useState<SavedOffer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [pdfOffer, setPdfOffer] = useState<SavedOffer | null>(null)
   const [selectedOffers, setSelectedOffers] = useState<string[]>([])
   const [isBulkDownloading, setIsBulkDownloading] = useState(false)
   const router = useRouter()
@@ -101,6 +99,29 @@ export default function OffersListPage() {
     return selectedOffers.length > 0 && selectedOffers.length < filteredOffers.length
   }
 
+  const buildOfferFilename = (offer: SavedOffer) => {
+    const customerName = (offer.customer.Stranka || "")
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+    const offerNum = (offer.offerNumber || "")
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+    return `${offerNum} ${customerName}.pdf`.trim() || "ponudba.pdf"
+  }
+
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   const handleBulkDownload = async () => {
     if (selectedOffers.length === 0) return
 
@@ -109,44 +130,14 @@ export default function OffersListPage() {
 
     try {
       for (const offer of selectedOfferData) {
-        await new Promise<void>(async (resolve) => {
-          setPdfOffer(offer)
-          
-          setTimeout(async () => {
-            try {
-              const element = document.getElementById('offer-preview-content')
-              if (!element) {
-                console.error('Element not found for offer:', offer.offerNumber)
-                resolve()
-                return
-              }
-
-              const pdfBlob = await generateOfferPDFFromElement(element, offer)
-              const url = URL.createObjectURL(pdfBlob)
-              const a = document.createElement("a")
-              a.href = url
-              const customerName = offer.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-              const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, " ")
-              const filename = `${offerNum} ${customerName}.pdf`
-              a.download = filename
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              
-              setTimeout(() => {
-                URL.revokeObjectURL(url)
-                resolve()
-              }, 100)
-            } catch (error) {
-              console.error(`Napaka pri prenosu ponudbe ${offer.offerNumber}:`, error)
-              resolve()
-            } finally {
-              setPdfOffer(null)
-            }
-          }, 1000)
-        })
+        try {
+          const pdfBlob = await fetchOfferPDFBlob(offer.id!)
+          triggerBlobDownload(pdfBlob, buildOfferFilename(offer))
+        } catch (error) {
+          console.error(`Napaka pri prenosu ponudbe ${offer.offerNumber}:`, error)
+        }
       }
-      
+
       setSelectedOffers([])
     } catch (error) {
       console.error('Napaka pri množičnem prenosu:', error)
@@ -157,35 +148,13 @@ export default function OffersListPage() {
   }
 
   const handleDownload = async (offer: SavedOffer) => {
-    setPdfOffer(offer)
-    
-    setTimeout(async () => {
-      try {
-        const element = document.getElementById('offer-preview-content')
-        if (!element) {
-          console.error('Element not found!')
-          throw new Error('Preview element not found')
-        }
-
-        const pdfBlob = await generateOfferPDFFromElement(element, offer)
-        const url = URL.createObjectURL(pdfBlob)
-        const a = document.createElement("a")
-        a.href = url
-        const customerName = offer.customer.Stranka.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ")
-        const offerNum = offer.offerNumber.replace(/[^a-zA-Z0-9]/g, " ")
-        const filename = `${offerNum} ${customerName}.pdf`
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error('Napaka pri prenosu PDF-ja:', error)
-        alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
-      } finally {
-        setPdfOffer(null)
-      }
-    }, 1000)
+    try {
+      const pdfBlob = await fetchOfferPDFBlob(offer.id!)
+      triggerBlobDownload(pdfBlob, buildOfferFilename(offer))
+    } catch (error) {
+      console.error('Napaka pri prenosu PDF-ja:', error)
+      alert('Napaka pri prenosu PDF-ja: ' + (error as Error).message)
+    }
   }
 
   const handleDelete = async (id: string, offerNumber: string) => {
@@ -570,15 +539,6 @@ export default function OffersListPage() {
         </main>
       </div>
 
-      {pdfOffer && (
-        <div style={{ position: 'fixed', left: '-10000px', top: '0', width: '210mm', backgroundColor: 'white' }}>
-          <OfferPreview
-            offer={pdfOffer}
-            onDownload={() => {}}
-            onSendEmail={() => {}}
-          />
-        </div>
-      )}
     </div>
   )
 }
