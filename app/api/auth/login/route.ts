@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
+import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,10 +9,10 @@ export async function POST(request: NextRequest) {
     console.log("Login attempt for username:", username)
 
     const correctUsername = process.env.ADMIN_USERNAME
-    const correctPassword = process.env.ADMIN_PASSWORD
+    const correctPasswordHash = process.env.ADMIN_PASSWORD_HASH
     const jwtSecret = process.env.JWT_SECRET
 
-    if (!correctUsername || !correctPassword || !jwtSecret) {
+    if (!correctUsername || !correctPasswordHash || !jwtSecret) {
       console.error("Missing environment variables")
       return NextResponse.json(
         { error: "Konfiguracija strežnika ni pravilna" },
@@ -19,22 +20,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (username !== correctUsername || password !== correctPassword) {
-      console.log("Invalid credentials")
+    // Preveri uporabniško ime
+    if (username !== correctUsername) {
+      console.log("Invalid username")
       return NextResponse.json(
         { error: "Napačno uporabniško ime ali geslo" },
         { status: 401 }
       )
     }
 
-    // Ustvari JWT token BREZ expiration
+    // Preveri geslo z bcrypt
+    const passwordMatch = await bcrypt.compare(password, correctPasswordHash)
+
+    if (!passwordMatch) {
+      console.log("Invalid password")
+      return NextResponse.json(
+        { error: "Napačno uporabniško ime ali geslo" },
+        { status: 401 }
+      )
+    }
+
+    // Ustvari JWT token z 30-dnevno veljavnostjo
     const token = jwt.sign(
-      { 
+      {
         username,
         role: "admin",
         timestamp: Date.now()
       },
-      jwtSecret
+      jwtSecret,
+      { expiresIn: "30d" }
     )
 
     console.log("Login successful, token created")
