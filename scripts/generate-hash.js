@@ -1,12 +1,19 @@
 // scripts/generate-hash.js
 const bcrypt = require('bcryptjs')
+const readline = require('readline')
 
-const password = process.argv[2]
-if (!password) {
-  console.error('Uporaba: node scripts/generate-hash.js "tvoje-geslo"')
-  process.exit(1)
-}
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
 
-const hash = bcrypt.hashSync(password, 10)
-console.log('Hash:')
-console.log(hash)
+rl.question('Vnesi geslo: ', (password) => {
+  if (!password) {
+    console.error('Geslo je prazno.')
+    process.exit(1)
+  }
+  const hash = bcrypt.hashSync(password, 10)
+  console.log('\nHash:')
+  console.log(hash)
+  rl.close()
+})
