@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       if (response.ok) {
         console.log("Login successful, calling login function")
-        login(data.token, data.user)
+        login(data.user)
       } else {
         setError(data.error || "Napaka pri prijavi")
       }

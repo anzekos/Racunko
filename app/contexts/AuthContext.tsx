@@ -11,12 +11,14 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (token: string, user: User) => void
-  logout: () => void
+  login: (user: User) => void
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Prijavni žeton je shranjen v piškotku httpOnly, ki ga nastavi strežnik.
+// Skripte na strani do žetona nimajo dostopa, zato ga tu ne hranimo.
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -24,100 +26,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   useEffect(() => {
-    console.log("🔄 AuthProvider mounted, checking auth...")
     checkAuth()
   }, [pathname])
 
-  const getBaseUrl = () => {
-    if (typeof window !== 'undefined') {
-      return window.location.origin
+  const redirectToLogin = () => {
+    setUser(null)
+    if (pathname !== "/login") {
+      router.push("/login")
     }
-    return ''
   }
 
   const checkAuth = async () => {
     try {
-      if (typeof window === 'undefined') {
-        setLoading(false)
-        return
-      }
+      // Odstrani žeton, ki so ga v localStorage shranjevale starejše različice aplikacije.
+      localStorage.removeItem("token")
 
-      const token = localStorage.getItem("token")
-      console.log("🔍 Auth check - Token exists:", !!token)
-      
-      if (!token) {
-        console.log("❌ No token found")
-        setLoading(false)
-        if (pathname !== "/login") {
-          router.push("/login") // SPREMENJENO: router.push namesto window.location.href
-        }
-        return
-      }
-
-      console.log("🔐 Checking auth with token:", token.substring(0, 20) + "...")
-
-      const baseUrl = getBaseUrl()
-      console.log("🌐 Making request to:", `${baseUrl}/api/auth/verify`)
-      
-      const response = await fetch(`${baseUrl}/api/auth/verify`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ token }),
-      })
-
-      console.log("📡 Verify response status:", response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("❌ HTTP error:", response.status, errorText)
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("✅ Verify response data:", data)
+      const response = await fetch("/api/auth/verify", { method: "POST" })
+      const data = response.ok ? await response.json() : { valid: false }
 
       if (data.valid) {
-        console.log("🎉 Auth successful, user:", data.user)
         setUser(data.user)
         if (pathname === "/login") {
-          console.log("🔀 Redirecting from login to home")
-          router.push("/") // SPREMENJENO: router.push namesto window.location.href
+          router.push("/")
         }
       } else {
-        console.log("❌ Token invalid, logging out")
-        localStorage.removeItem("token")
-        setUser(null)
-        if (pathname !== "/login") {
-          router.push("/login") // SPREMENJENO: router.push namesto window.location.href
-        }
+        redirectToLogin()
       }
     } catch (error) {
-      console.error("💥 Auth check error:", error)
-      localStorage.removeItem("token")
-      setUser(null)
-      if (pathname !== "/login") {
-        router.push("/login") // SPREMENJENO: router.push namesto window.location.href
-      }
+      console.error("Auth check error:", error)
+      redirectToLogin()
     } finally {
       setLoading(false)
     }
   }
 
-  const login = (token: string, userData: User) => {
-    console.log("🔑 Login function called, setting token and redirecting")
-    localStorage.setItem("token", token)
+  const login = (userData: User) => {
     setUser(userData)
-    router.push("/") // SPREMENJENO: router.push namesto window.location.href
+    router.push("/")
   }
 
-  const logout = () => {
-    console.log("🚪 Logout called")
-    localStorage.removeItem("token")
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" })
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
     setUser(null)
-    router.push("/login") // SPREMENJENO: router.push namesto window.location.href
+    router.push("/login")
   }
 
   return (

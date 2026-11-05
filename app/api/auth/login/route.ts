@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
+import { AUTH_COOKIE, authCookieOptions } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,11 +54,14 @@ export async function POST(request: NextRequest) {
 
     console.log("Login successful, token created")
 
-    return NextResponse.json({
+    // Žeton se shrani v piškotek httpOnly, ki ga skripte na strani ne morejo prebrati.
+    // Brskalnik ga samodejno pošilja z vsako zahtevo na isti strežnik.
+    const response = NextResponse.json({
       success: true,
-      token,
       user: { username, role: "admin" }
     })
+    response.cookies.set(AUTH_COOKIE, token, authCookieOptions)
+    return response
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json(
